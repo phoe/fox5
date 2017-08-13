@@ -1,4 +1,4 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; FOX5
 ;;;; © Michał "phoe" Herda 2017
 ;;;; fox5.asd
@@ -11,6 +11,14 @@
   :depends-on (#:fast-io
                #:cl-lzma
                #:flexi-streams
+               #:zpng
                #:alexandria)
   :components ((:file "package")
+               (:file "constants")
+               (:file "utils")
+               (:file "header")
+               (:file "classes")
+               (:file "command-block")
+               (:file "parsers")
+               (:file "images")
                (:file "fox5")))

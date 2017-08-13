@@ -7,4 +7,5 @@
   (:use #:cl
         #:fast-io
         #:alexandria
-        #:cl-lzma))
+        #:cl-lzma)
+  (:shadow #:ratio))
