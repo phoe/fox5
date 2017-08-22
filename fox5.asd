@@ -12,6 +12,7 @@
                #:cl-lzma
                #:flexi-streams
                #:zpng
+               #:skippy
                #:alexandria)
   :components ((:file "package")
                (:file "constants")

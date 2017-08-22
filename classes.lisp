@@ -7,66 +7,91 @@
 
 (defclass fox5-class ()
   ((%children :accessor children
-              :initform nil)))
+              ;; :initform nil
+              )))
 
 (defclass file (fox5-class)
   ((%image-list :accessor image-list
-                :initform nil)
+                ;; :initform nil
+                )
    (%generator :accessor generator
-               :initform 0)))
+               ;; :initform 0
+               )))
 
 (defclass object (fox5-class)
   ((%object-id :accessor object-id
-               :initform -1)
+               ;; :initform -1
+               )
    (%name :accessor name
-          :initform "")
+          ;; :initform ""
+          )
    (%description :accessor description
-                 :initform "")
+                 ;; :initform ""
+                 )
    (%authors :accessor authors
-             :initform '())
+             ;; :initform '()
+             )
    (%revisions :accessor revisions
-               :initform 0)
+               ;; :initform 0
+               )
    (%keywords :accessor keywords
-              :initform '())
+              ;; :initform '()
+              )
    (%license :accessor license
-             :initform 0)
+             ;; :initform :fc-by-sa
+             )
    (%portal :accessor portal
-            :initform "")
+            ;; :initform ""
+            )
    (%edit-type :accessor edit-type
-               :initform 0)
+               ;; :initform 0
+               )
    (%flags :accessor flags
-           :initform '())
+           ;; :initform '()
+           )
    (%more-flags :accessor more-flags
-                :initform 0) ;; TODO parse this
+                ;; :initform 0
+                ) ;; TODO parse this
    (%fx-filter :accessor fx-filter
-               :initform '(:target-layer :vb
-                           :blend-mode 0))))
+               ;; :initform '(:target-layer :vb
+               ;;             :blend-mode 0)
+               )))
 
 (defclass shape (fox5-class)
   ((%purpose :accessor purpose
-             :initform 0)
+             ;; :initform 0
+             )
    (%direction :accessor direction
-               :initform nil)
+               ;; :initform nil
+               )
    (%state :accessor state
-           :initform 0)
+           ;; :initform 0
+           )
    (%ratio :accessor ratio
-           :initform '(0 0))
+           ;; :initform '(0 0)
+           )
    (%kitterspeak :accessor kitterspeak
-                 :initform ())))
+                 ;; :initform ()
+                 )))
 
 (defclass frame (fox5-class)
   ((%frame-offset :accessor frame-offset
-                  :initform '(:x 0 :y 0))
+                  ;; :initform '(:x 0 :y 0)
+                  )
    (%furre-offset :accessor furre-offset
-                  :initform '(:x 0 :y 0))))
+                  ;; :initform '(:x 0 :y 0)
+                  )))
 
 (defclass sprite (fox5-class)
   ((%purpose :accessor purpose
-             :initform 0)
+             ;; :initform 0
+             )
    (%image-id :accessor image-id
-              :initform 0)
+              ;; :initform 0
+              )
    (%offset :accessor offset
-            :initform '(:x 0 :y 0))))
+            ;; :initform '(:x 0 :y 0)
+            )))
 
 (defclass image (fox5-class)
   ((%compressed-size :accessor compressed-size

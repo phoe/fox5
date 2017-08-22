@@ -43,7 +43,7 @@
     (with-open-file (stream filespec :direction :output
                                      :if-exists :supersede
                                      :if-does-not-exist :create
-                                     :element-type '(unsigned-byte 8))
+                                     :element-type 'octet)
       (zpng:start-png png stream)
       (loop repeat (* width height)
             for a = (fast-read-byte buffer)
@@ -52,3 +52,57 @@
             for b = (fast-read-byte buffer)
             do (zpng:write-pixel (list r g b a) png))
       (zpng:finish-png png))))
+
+(defun denormalize-gif (filespec)
+  (flet ((fix-gif (transparency-index orig-canvas new-canvas)
+           (let ((orig (skippy:image-data orig-canvas))
+                 (new (skippy:image-data new-canvas)))
+             (loop for i from 0
+                   for x across orig
+                   for y across new
+                   if (= y transparency-index)
+                     do (setf (aref new i) (aref orig i)))
+             new-canvas)))
+    (loop ;; VARS
+          with data = (skippy:load-data-stream filespec)
+          with images = (coerce (skippy:images data) 'list)
+          with result = (list (first images))
+          with width = (skippy:width data)
+          with height = (skippy:height data)
+          with color-table = (skippy:color-table data)
+          with loopingp = (skippy:loopingp data)
+          with base-image-data = (copy-seq (skippy:image-data (first images)))
+          with base-canvas = (skippy:make-canvas :width width
+                                                 :height height
+                                                 :image-data base-image-data)
+          ;; LOOP
+          for image in (cdr images)
+          for image-data = (skippy:image-data image)
+          for new-width = (skippy:width image)
+          for new-height = (skippy:height image)
+          for disposal-method = (skippy:disposal-method image)
+          for transparency-index = (skippy:transparency-index image)
+          for canvas = (skippy:make-canvas :width new-width
+                                           :height new-height
+                                           :image-data image-data)
+          for top-position = (skippy:top-position image)
+          for left-position = (skippy:left-position image)
+          for delay-time = (skippy:delay-time image)
+          for clone = (skippy:clone base-canvas)
+          for _ = (skippy:composite canvas clone
+                                    :dx left-position
+                                    :dy top-position)
+          for fixed = (fix-gif transparency-index base-canvas clone)
+          for new-image = (skippy:canvas-image fixed)
+          do (setf (skippy:delay-time new-image) delay-time
+                   (skippy:disposal-method new-image) disposal-method
+                   (skippy:transparency-index new-image) transparency-index
+                   base-canvas clone)
+             (push new-image result)
+          finally
+             (return (skippy:make-data-stream
+                      :width width
+                      :height height
+                      :color-table color-table
+                      :loopingp loopingp
+                      :initial-images (nreverse result))))))
