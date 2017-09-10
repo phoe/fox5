@@ -6,12 +6,13 @@
 (asdf:defsystem #:fox5
   :description "Library for encoding/decoding Furcadia FOX5 format"
   :author "Michał \"phoe\" Herda <phoe@openmailbox.org>"
-  :license "MIT"
+  :license "BSD 3-clause"
   :serial t
   :depends-on (#:fast-io
                #:cl-lzma
                #:flexi-streams
                #:zpng
+               #:closer-mop
                #:skippy
                #:alexandria)
   :components ((:file "package")
@@ -22,4 +23,6 @@
                (:file "command-block")
                (:file "parsers")
                (:file "images")
+               (:file "gif")
+               (:file "writers")
                (:file "fox5")))

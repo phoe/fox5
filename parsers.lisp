@@ -125,7 +125,7 @@
            (ecase byte
              (0 nil) (1 :menu-icon) (2 :ui-button) (3 :butler) (4 :portrait)
              (5 :ds-button) (11 :avatar) (21 :floor) (22 :item) (23 :wall)
-             (24 :region) (25 :effect) (:28 :pad-item) (29 :portal-item)
+             (24 :region) (25 :effect) (28 :pad-item) (29 :portal-item)
              (35 :specitag) (41 :lighting) (42 :ambience))))
     (setf (purpose *current-object*)
           (purpose (readu8-be buffer)))))

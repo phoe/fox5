@@ -6,92 +6,60 @@
 (in-package #:fox5)
 
 (defclass fox5-class ()
-  ((%children :accessor children
-              ;; :initform nil
-              )))
+  ((%children :initarg :children
+              :accessor children
+              :initform nil)))
 
 (defclass file (fox5-class)
-  ((%image-list :accessor image-list
-                ;; :initform nil
-                )
-   (%generator :accessor generator
-               ;; :initform 0
-               )))
+  ((%image-list :initarg :image-list
+                :accessor image-list)
+   (%generator :initarg :generator
+               :accessor generator)))
 
 (defclass object (fox5-class)
-  ((%object-id :accessor object-id
-               ;; :initform -1
-               )
-   (%name :accessor name
-          ;; :initform ""
-          )
-   (%description :accessor description
-                 ;; :initform ""
-                 )
-   (%authors :accessor authors
-             ;; :initform '()
-             )
-   (%revisions :accessor revisions
-               ;; :initform 0
-               )
-   (%keywords :accessor keywords
-              ;; :initform '()
-              )
-   (%license :accessor license
-             ;; :initform :fc-by-sa
-             )
-   (%portal :accessor portal
-            ;; :initform ""
-            )
-   (%edit-type :accessor edit-type
-               ;; :initform 0
-               )
-   (%flags :accessor flags
-           ;; :initform '()
-           )
-   (%more-flags :accessor more-flags
-                ;; :initform 0
-                ) ;; TODO parse this
-   (%fx-filter :accessor fx-filter
-               ;; :initform '(:target-layer :vb
-               ;;             :blend-mode 0)
-               )))
+  ((%object-id :initarg :object-id)
+   (%name :initarg :name)
+   (%description :accessor description)
+   (%authors :initarg :authors
+             :accessor authors)
+   (%revisions :accessor revisions)
+   (%keywords :accessor keywords)
+   (%license :accessor license)
+   (%portal :accessor portal)
+   (%edit-type :initarg :edit-type
+               :accessor edit-type)
+   (%flags :initarg :flags
+           :accessor flags)
+   (%more-flags :accessor more-flags) ;; TODO parse this
+   (%fx-filter :accessor fx-filter)))
 
 (defclass shape (fox5-class)
-  ((%purpose :accessor purpose
-             ;; :initform 0
-             )
-   (%direction :accessor direction
-               ;; :initform nil
-               )
-   (%state :accessor state
-           ;; :initform 0
-           )
-   (%ratio :accessor ratio
-           ;; :initform '(0 0)
-           )
-   (%kitterspeak :accessor kitterspeak
-                 ;; :initform ()
-                 )))
+  ((%purpose :initarg :purpose
+             :accessor purpose)
+   (%direction :initarg :direction
+               :accessor direction)
+   (%state :initarg :state
+           :accessor state)
+   (%ratio :initarg :ratio
+           :accessor ratio)
+   (%kitterspeak :initarg :kitterspeak
+                 :accessor kitterspeak)))
 
 (defclass frame (fox5-class)
-  ((%frame-offset :accessor frame-offset
-                  ;; :initform '(:x 0 :y 0)
-                  )
-   (%furre-offset :accessor furre-offset
-                  ;; :initform '(:x 0 :y 0)
-                  )))
+  ((%frame-offset :initarg :frame-offset
+                  :accessor frame-offset
+                  :initform '(:x 0 :y 0))
+   (%furre-offset :initarg :furre-offset
+                  :accessor furre-offset
+                  :initform '(:x 0 :y 0))))
 
 (defclass sprite (fox5-class)
-  ((%purpose :accessor purpose
-             ;; :initform 0
-             )
-   (%image-id :accessor image-id
-              ;; :initform 0
-              )
-   (%offset :accessor offset
-            ;; :initform '(:x 0 :y 0)
-            )))
+  ((%purpose :initarg :purpose
+             :accessor purpose)
+   (%image-id :initarg :image-id
+              :accessor image-id)
+   (%offset :initarg :offset
+            :accessor offset)))
 
 (defclass image (fox5-class)
   ((%compressed-size :accessor compressed-size
@@ -103,4 +71,4 @@
    (%format :accessor image-format
             :initarg :format)
    (%data :accessor data
-          :initform nil)))
+          :initarg :data)))
