@@ -25,6 +25,8 @@
 ;;; File writers
 
 (defmethod fox5-write ((object file) buffer)
+  (dotimes (i 4)
+    (writeu8-be #x00 buffer))
   (writeu8-be #x4C buffer)
   (let* ((class-name (class-name (class-of object)))
          (position (position class-name *list-levels*)))
