@@ -23,7 +23,7 @@
                  (return *current-object*))
                (push *current-object* (children *parent-object*))
                (setf *current-object* (make-instance class))
-               (if (= i count) (return))
+               (when (= i count) (return))
           else do (parse-command command buffer))))
 
 ;;; File commands
