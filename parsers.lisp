@@ -8,51 +8,23 @@
 ;;; Generic commands
 
 (define-parser (#x00 buffer))
-#|
+
 (define-parser (#x4C buffer)
   (let* ((level (readu8-be buffer))
-         (count (readu32-be buffer)))
-    (let ((class (nth level *list-levels*))
-          (*parent-object* *current-object*)
-          (*current-object* (make-instance class)))
-      )))
-
-(define-parser (#x4C buffer 't level count)
-  (let* (;; (level (readu8-be buffer))
-         ;; (n (readu32-be buffer))
+         (count (readu32-be buffer))
          (class (nth level *list-levels*))
          (*parent-object* *current-object*)
          (*current-object* (make-instance class)))
-    (loop for command = (code-char (readu8-be buffer))
-          if (eql command #\L)
-            do (let ((new-level (readu8-be buffer))
-                     (new-count (readu32-be buffer)))
-                 (loop repeat count
-                       collect (parse-command command buffer
-                                              new-level new-count)
-                         into children
-                       finally (setf (children *parent-object*) children)))
-          else if (eql command #\<)
-                 return *current-object*
-          else
-            do (parse-command command buffer))
-    ;; (setf (children *current-object*)
-    ;;       (loop with i = 0
-    ;;             with j = 0
-    ;;             for command = (code-char (readu8-be buffer))
-    ;;             if (eql command #\L)
-    ;;               do (push (parse-command command buffer)
-    ;;                        (children *current-object*))
-    ;;             collect (parse-command command buffer) into children
-    ;;             else if (eql command #\<)
-    ;;                    do (incf i)
-    ;;                       (when (= i n)
-    ;;                         (when (< level 3)
-    ;;                           (format t "Level ~A, count: ~D, children: ~D~%"
-    ;;                                   class n (length children)))
-    ;;                         (return children))
-    ;;             else do (parse-command command buffer)))
-    ))|#
+    (loop with i = 0
+          for command = (code-char (readu8-be buffer))
+          if (eql command #\<)
+            do (incf i)
+               (unless *parent-object*
+                 (return *current-object*))
+               (push *current-object* (children *parent-object*))
+               (setf *current-object* (make-instance class))
+               (if (= i count) (return))
+          else do (parse-command command buffer))))
 
 ;;; File commands
 
