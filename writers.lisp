@@ -10,12 +10,29 @@
 (defmethod fox5-write :after ((object fox5-class) buffer)
   (when-let ((children (children object)))
     (writeu8-be #x4C buffer)
-    (writeu8-be (position (class-name (class-of object)) *list-levels*) buffer)
+    (let* ((class-name (class-name (class-of object)))
+           (position (1+ (position class-name *list-levels*))))
+      (format t "~D " position)
+      (writeu8-be position buffer))
     (writeu32-be (length children) buffer)
     (mapc (rcurry #'fox5-write buffer) children))
   (fast-io:write8 #x3C buffer))
 
+(defmethod fox5-write ((object fox5-class) buffer)
+  (mapc (lambda (x) (fox5-write-slot object x buffer))
+        (bound-slots-values object)))
+
 ;;; File writers
+
+(defmethod fox5-write ((object file) buffer)
+  (writeu8-be #x4C buffer)
+  (let* ((class-name (class-name (class-of object)))
+         (position (position class-name *list-levels*)))
+    (format t "~D " position)
+    (writeu8-be position buffer)
+    (writeu32-be 1 buffer)
+    (mapc (lambda (x) (fox5-write-slot object x buffer))
+          '(%image-list %generator))))
 
 (define-writer file generator (buffer)
   (writeu8-be #x67 buffer)
@@ -42,6 +59,7 @@
 
 (define-writer object authors (buffer)
   (writeu8-be #x61 buffer)
+  (writeu16-be (length authors) buffer)
   (flet ((octetize (string) (flexi-streams:string-to-octets
                              string :external-format :utf-8)))
     (loop for string in authors
@@ -78,11 +96,11 @@
     (fast-write-sequence octets buffer)))
 
 (define-writer object flags (buffer)
-  (let ((list'(:walkable :gettable :sittable :flyable
-               :swimmable :clickable :highlightable :kickable))
+  (let ((list '(:walkable :gettable :sittable :flyable
+                :swimmable :clickable :highlightable :kickable))
         (byte 0))
-    (loop for flag in list
-          do (setf byte (dpb 1 (byte 1 (position flag flags)) byte)))
+    (loop for flag in flags
+          do (setf byte (dpb 1 (byte 1 (position flag list)) byte)))
     (writeu8-be #x21 buffer)
     (writeu8-be byte buffer)))
 

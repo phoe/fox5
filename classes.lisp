@@ -17,8 +17,10 @@
                :accessor generator)))
 
 (defclass object (fox5-class)
-  ((%object-id :initarg :object-id)
-   (%name :initarg :name)
+  ((%object-id :accessor object-id
+               :initarg :object-id)
+   (%name :accessor name
+          :initarg :name)
    (%description :accessor description)
    (%authors :initarg :authors
              :accessor authors)

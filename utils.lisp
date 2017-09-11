@@ -18,16 +18,24 @@
                                       :element-type 'octet)
      ,@body))
 
-(defgeneric parse-command (command buffer))
+(defgeneric parse-command (command buffer &optional level count))
 
 (defgeneric fox5-write-slot (class-name slot-name buffer))
 
 (defvar *current-object* nil)
 
-(defmacro define-parser ((byte buffer &optional (object-class 't)) &body body)
-  `(defmethod parse-command ((command (eql ,(code-char byte))) ,buffer)
-     (when (typep *current-object* ,object-class)
-       ,@body)))
+(defvar *parent-object* nil)
+
+(defmacro define-parser ((byte buffer
+                          &optional (object-class 't)
+                            level-var count-var) &body body)
+  (let ((count-var (or count-var (gensym)))
+        (level-var (or level-var (gensym))))
+    `(defmethod parse-command ((command (eql ,(code-char byte)))
+                               ,buffer &optional (,level-var 0) (,count-var 1))
+       (declare (ignorable ,level-var ,count-var))
+       (when (typep *current-object* ,object-class)
+         ,@body))))
 
 (defmacro define-writer (class-name accessor-name (buffer-var) &body body)
   (let ((slot-name (symbolicate "%" accessor-name)))
@@ -44,4 +52,4 @@
   (loop for s in (c2mop:class-direct-slots (class-of o))
         for n = (c2mop:slot-definition-name s)
         when (slot-boundp o n)
-          collect (cons n (slot-value o n))))
+          collect n))
