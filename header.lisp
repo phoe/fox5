@@ -31,8 +31,8 @@
           (let ((byte (read8-be buffer)))
             (ecase byte (0 :no) (t (list :yes byte)))))
     (read16-be buffer) ;; reserved bytes
-    (setf (compressed-size instance) (read32-be buffer)
-          (decompressed-size instance) (read32-be buffer))
+    (setf (compressed-size instance) (readu32-be buffer)
+          (decompressed-size instance) (readu32-be buffer))
     instance))
 
 (defun validate-header-magic-string (stream)
