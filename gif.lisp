@@ -40,7 +40,7 @@
         finally (return (values argbs (fix-ks ks)))))
 
 (defun make-gif-ks (i delay)
-  `((29 ,i 0) (2 ,delay 0)))
+  `((29 ,i 0) (2 ,(if (= 0 delay) 10 (* 10 delay)) 0)))
 
 (defun fix-ks (ks)
   (setf (cdr (last ks)) (cons (first ks) nil))
@@ -51,7 +51,7 @@
 
 (defun gif-make-file (images kitterspeak &optional remappingp)
   (let ((file (make-instance 'file
-                             :generator *fox5-generator-number*
+                             :generator `(:third-party ,*fox5-generator-number*)
                              :image-list images)))
     (push (gif-make-object images kitterspeak remappingp) (children file))
     file))
@@ -70,16 +70,17 @@
                               :kitterspeak kitterspeak
                               :purpose :portrait
                               :ratio '(1 1)
-                              :state 1)))
-    (push (gif-make-frame images remappingp) (children shape))
+                              :state 2))
+        (frames (loop for image in images
+                      for i from 1
+                      collect (gif-make-frame i remappingp))))
+    (setf (children shape) frames)
     shape))
 
-(defun gif-make-frame (images &optional remappingp)
+(defun gif-make-frame (i &optional remappingp)
   (let* ((frame (make-instance 'frame))
          (purpose (if remappingp :remapping-data nil))
-         (sprites (loop for image in images
-                        for i from 1
-                        collect (make-instance 'sprite :image-id i
-                                                       :purpose purpose))))
-    (setf (children frame) sprites)
+         (sprite (make-instance 'sprite :image-id i
+                                        :purpose purpose)))
+    (push sprite (children frame))
     frame))
