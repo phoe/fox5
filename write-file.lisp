@@ -8,29 +8,33 @@
 (defun write-fox5 (file filespec)
   (with-open-file (stream filespec :direction :output
                                    :if-does-not-exist :create
-                                   :if-exists :error
+                                   :if-exists :supersede
                                    :element-type 'octet)
     (with-fast-output (buffer stream)
-      (let* ((command-block (with-fast-output (b) (fox5-write file b)))
-             (compressed-block (cl-lzma:lzma-compress command-block))
-             (compressed-size (length compressed-block))
-             (decompressed-size (length command-block)))
-        (write-command-block file buffer)
-        (write-images file buffer)
-        (write-header compressed-size decompressed-size buffer)
-        filespec))))
+      (let ((command-block (with-fast-output (b) (fox5-write file b))))
+        (multiple-value-bind (compressed-block props-encoded decompressed-size)
+            (cl-lzma:lzma-compress command-block)
+          (write-command-block compressed-block props-encoded
+                               decompressed-size buffer)
+          (write-images file buffer)
+          (write-header (length compressed-block) decompressed-size buffer)))))
+  filespec)
 
-(defun write-command-block (file buffer)
-  (let* ((command-block (with-fast-output (b) (fox5-write file b)))
-         (compressed-block (cl-lzma:lzma-compress command-block)))
-    (fast-write-sequence compressed-block buffer)
-    (values)))
+(defun write-command-block (compressed-block props-encoded
+                            decompressed-size buffer)
+  (fast-write-sequence props-encoded buffer)
+  (writeu64-le decompressed-size buffer)
+  (fast-write-sequence compressed-block buffer)
+  (values))
 
 (defun write-images (file buffer)
   (let ((images (image-list file)))
-    (loop for image in images
-          for compressed-image = (cl-lzma:lzma-compress (data image))
-          do (fast-write-sequence compressed-image buffer))
+    (dolist (image images)
+      (multiple-value-bind (compressed-block props-encoded decompressed-size)
+          (cl-lzma:lzma-compress (data image))
+        (fast-write-sequence props-encoded buffer)
+        (writeu64-le decompressed-size buffer)
+        (fast-write-sequence compressed-block buffer)))
     (values)))
 
 ;; TODO rename all headers to footers
