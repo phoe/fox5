@@ -40,7 +40,7 @@
         finally (return (values argbs (fix-ks ks)))))
 
 (defun make-gif-ks (i delay)
-  `((29 ,i 0) (2 ,(if (= 0 delay) 10 (* 10 delay)) 0)))
+  `((29 ,i 0) (2 ,(if (= 0 delay) 100 (* 10 delay)) 0)))
 
 (defun fix-ks (ks)
   (setf (cdr (last ks)) (cons (first ks) nil))
@@ -84,3 +84,9 @@
                                         :purpose purpose)))
     (push sprite (children frame))
     frame))
+
+(defun gif-fox5 (input-filename output-filename)
+  (let ((gif (denormalize-gif input-filename)))
+    (validate-gif gif)
+    (multiple-value-bind (images ks) (gif-to-images gif)
+      (write-fox5 (gif-make-file images ks) output-filename))))
