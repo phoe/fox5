@@ -49,3 +49,14 @@
         for n = (c2mop:slot-definition-name s)
         when (slot-boundp o n)
           collect n))
+
+;;; The following was taken from https://github.com/death/gnusdumps
+;;; and is MIT-licensed.
+
+(defun robust-subseq (sequence start &optional end)
+  "Like SUBSEQ, but handles out-of-range bounding index designators
+gracefully."
+  (let* ((length (length sequence))
+         (start (max 0 (min start length)))
+         (end (max 0 start (min length (or end length)))))
+    (subseq sequence start end)))

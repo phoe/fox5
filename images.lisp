@@ -53,19 +53,23 @@
             do (zpng:write-pixel (list r g b a) png))
       (zpng:finish-png png))))
 
+;;; TODO I will not need this function anymore
 (defun denormalize-gif (filespec)
   (flet ((fix-gif (transparency-index orig-canvas new-canvas)
-           (let ((orig (skippy:image-data orig-canvas))
-                 (new (skippy:image-data new-canvas)))
-             (loop for i from 0
-                   for x across orig
-                   for y across new
-                   if (= y transparency-index)
-                     do (setf (aref new i) (aref orig i)))
-             new-canvas)))
+           (if (null transparency-index)
+               new-canvas
+               (let ((orig (skippy:image-data orig-canvas))
+                     (new (skippy:image-data new-canvas)))
+                 (loop for i from 0
+                       for x across orig
+                       for y across new
+                       if (= y transparency-index)
+                         do (setf (aref new i) (aref orig i)))
+                 new-canvas))))
     (loop ;; VARS
           with data = (skippy:load-data-stream filespec)
-          with images = (coerce (skippy:images data) 'list)
+          with images = (robust-subseq (coerce (skippy:images data) 'list)
+                                       0 50)
           with result = (list (first images))
           with width = (skippy:width data)
           with height = (skippy:height data)
@@ -97,6 +101,7 @@
           do (setf (skippy:delay-time new-image) delay-time
                    (skippy:disposal-method new-image) disposal-method
                    (skippy:transparency-index new-image) transparency-index
+                   (skippy:color-table new-image) (skippy:color-table image)
                    base-canvas clone)
              (push new-image result)
           finally
