@@ -39,7 +39,7 @@ generalized boolean signifying if the GIF should loop."
     (when (eq disposal-method :restore-background)
       (loop for i below (array-total-size (image-data image))
             do (setf (aref (image-data image) i) 0))))
-  (loop with color-table = (or color-table (color-table image))
+  (loop with color-table = (or (color-table image) color-table)
         with t-index = (transparency-index image)
         with width = (width image)
         with height = (height image)
