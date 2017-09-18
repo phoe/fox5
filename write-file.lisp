@@ -31,7 +31,7 @@
 (defun write-images (file buffer)
   (let ((images (image-list file)))
     (dolist (image images)
-      (princ ".")
+      ;;(princ ".")
       (multiple-value-bind (compressed-block props-encoded decompressed-size)
           (cl-lzma:lzma-compress (data image))
         (setf (compressed-size image) (+ 13 (length compressed-block)))

@@ -6,6 +6,7 @@
 (in-package :skippy)
 
 ;;; TODO implement "Restore to Previous"
+;;; TODO export this as a pluggable SKIPPY module
 
 (export 'render)
 
