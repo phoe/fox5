@@ -5,53 +5,77 @@
 
 (in-package :fox5)
 
+(defun octetize (string &optional (external-format :utf-8))
+  "Shortcut for FLEXI-STREAMS:STRING-TO-OCTETS."
+  (flexi-streams:string-to-octets string :external-format external-format))
+
 (defun read-string (buffer &optional (external-format :utf-8))
+  "Reads a FOX5 string from the provided octet buffer. First, it reads a
+U16-BE signifying the number of bytes in the string, and then, it reads that~
+many characters and puts them in the string."
   (declare (type fast-io::input-buffer buffer))
   (let* ((n (readu16-be buffer))
          (vector (make-octet-vector n)))
     (fast-io:fast-read-sequence vector buffer)
-    (flexi-streams:octets-to-string vector :external-format external-format)))
+    (octetize vector external-format)))
 
 (defmacro with-input-from-binary ((stream filespec) &body body)
+  "Like WITH-OPEN-FILE, except with defaults suitable for reading from binary."
   `(with-open-file (,stream ,filespec :direction :input
                                       :if-does-not-exist :error
                                       :element-type 'octet)
      ,@body))
 
-(defgeneric parse-command (command buffer))
+(defmacro with-output-to-binary ((stream filespec) &body body)
+  "Like WITH-OPEN-FILE, except with defaults suitable for wriiting to binary."
+  `(with-open-file (,stream ,filespec :direction :output
+                                      :if-exists :supersede
+                                      :if-does-not-exist :create
+                                      :element-type 'octet)
+     ,@body))
 
-(defgeneric fox5-write-slot (class-name slot-name buffer))
+(defun bound-slots-values (instance)
+  "Given an instance of STANDARD-OBJECT, returns a list of all slot names which
+are bound in that instance."
+  (check-type instance standard-object)
+  (loop for slot in (c2mop:class-direct-slots (class-of instance))
+        for name = (c2mop:slot-definition-name slot)
+        when (slot-boundp instance name)
+          collect name))
 
-(defvar *current-object* nil)
+(defun vector-times (vector n)
+  "Returns a fresh vector which is VECTOR concatenated to itself N times."
+  (let* ((length (length vector))
+         (result (make-array (* length n)
+                             :element-type (array-element-type vector))))
+    (loop for i from 0 upto (* length n) by length
+          do (replace result vector :start1 i)
+          finally (return result))))
 
-(defvar *parent-object* nil)
+(defmacro rassoc-value-or-die (alist key &key (test ''eql))
+  "Like ALEXANDRIA:RASSOC-VALUE, except it signals an error if the value is
+not found."
+  (once-only (key)
+    `(multiple-value-bind (value foundp)
+         (rassoc-value ,alist ,key ,@(when test `(:test ,test)))
+       (if foundp
+           value
+           (error "~A of ~A was not found in ~A."
+                  'rassoc ,key ',alist)))))
 
-(defmacro define-parser ((byte buffer
-                          &optional (object-class 't)) &body body)
-  `(defmethod parse-command ((command (eql ,(code-char byte)))
-                             ,buffer)
-     (when (typep *current-object* ,object-class)
-       ,@body)))
+(defmacro assoc-value-or-die (alist key &key (test ''eql))
+  "Like ALEXANDRIA:ASSOC-VALUE, except it signals an error if the value is
+not found."
+  (once-only (key)
+    `(multiple-value-bind (value foundp)
+         (assoc-value ,alist ,key ,@(when test `(:test ,test)))
+       (if foundp
+           value
+           (error "~A of ~A was not found in ~A."
+                  'assoc ,key ',alist)))))
 
-(defmacro define-writer (class-name accessor-name (buffer-var) &body body)
-  (let ((slot-name (symbolicate "%" accessor-name)))
-    `(defmethod fox5-write-slot ((,class-name ,class-name)
-                                 (slot-name (eql ',slot-name))
-                                 ,buffer-var)
-       (let ((,accessor-name (slot-value ,class-name slot-name)))
-         ,@body))))
-
-(defun octetize (string &optional (external-format :utf-8))
-  (flexi-streams:string-to-octets string :external-format external-format))
-
-(defun bound-slots-values (o)
-  (loop for s in (c2mop:class-direct-slots (class-of o))
-        for n = (c2mop:slot-definition-name s)
-        when (slot-boundp o n)
-          collect n))
-
-;;; The following was taken from https://github.com/death/gnusdumps
-;;; and is MIT-licensed.
+;;; The following function, ROBUST-SUBSEQ, was taken from
+;;; https://github.com/death/gnusdumps and is MIT-licensed.
 
 (defun robust-subseq (sequence start &optional end)
   "Like SUBSEQ, but handles out-of-range bounding index designators

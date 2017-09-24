@@ -73,10 +73,11 @@
       (16 247 55) (17 247 55) (18 247 55) (103 83 0))
     "Classic 8-bit Furcadia palette.")
   (defvar *color-types*
-    '(badge bracers accent boots cape trousers vest eyes fur markings wings hair)))
+    '(fur markings hair eyes badge vest bracers
+      cape boots trousers wings accent)))
 
 (deftype color ()
-  '#.`(member ,*color-types*))
+  '#.`(member ,@*color-types*))
 
 (defvar *colors-tmp*
   '(((badge)
@@ -425,11 +426,48 @@
      ("Lichen Green" (115 141 99) (125 153 108) (143 175 123) (155 183 139)
       (171 191 153) (187 207 171) (201 221 189) (219 231 211)))))
 
-(defvar *colors* nil)
+(defvar *colors*
+  (let ((tmp (make-hash-table)))
+    (dolist (i *colors-tmp*)
+      (let ((symbols (car i))
+            (hashtable (alist-hash-table (cdr i) :test #'equal)))
+        (mapc (lambda (x) (setf (gethash x tmp) hashtable)) symbols)))
+    tmp))
 
-(unless *colors*
-  (setf *colors* (make-hash-table))
-  (dolist (i *colors-tmp*)
-    (let ((symbols (car i))
-          (hashtable (alist-hash-table (cdr i) :test #'equal)))
-      (mapc (lambda (x) (setf (gethash x *colors*) hashtable)) symbols))))
+;; (unless *colors*
+;;   (setf *colors* (make-hash-table))
+;;   (dolist (i *colors-tmp*)
+;;     (let ((symbols (car i))
+;;           (hashtable (alist-hash-table (cdr i) :test #'equal)))
+;;       (mapc (lambda (x) (setf (gethash x *colors*) hashtable)) symbols))))
+
+;; TODO remove this for final version, we only need the final gradients
+(defparameter *gradient-color-stops*
+  '(8/85 16/85 24/85 32/85 8/17 48/85 56/85 64/85))
+
+(defvar *gradients*
+  (let ((tmp (make-hash-table :test #'equal)))
+    (dolist (entry *colors-tmp*)
+      (destructuring-bind (symbols . colors) entry
+        (dolist (color colors)
+          (destructuring-bind (name . color) color
+            (let ((gradient (gradient color)))
+              (dolist (symbol symbols)
+                (setf (gethash (list symbol name) tmp) gradient)))))))
+    tmp))
+
+(defvar *color-names*
+  (let ((tmp (make-hash-table)))
+    (dolist (entry *colors-tmp*)
+      (destructuring-bind (symbols . colors) entry
+        (let ((names (mapcar #'car colors)))
+          (dolist (symbol symbols)
+            (setf (gethash symbol tmp) names)))))
+    tmp))
+
+(defvar *remap-color-values*
+  (alist-hash-table
+   '((1 . badge) (2 . cape) (3 . eyes) (4 . markings)
+     (6 . vest) (7 . accent) (9 . bracers) (10 . wings)
+     (12 . trousers) (13 . hair) (14 . boots) (15 . fur)
+     (255 . outline))))

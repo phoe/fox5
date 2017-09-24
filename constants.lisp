@@ -5,8 +5,10 @@
 
 (in-package :fox5)
 
-(defvar *fox5-header-magic*
-  #.(coerce '(70 79 88 53 46 49 46 49) 'octet-vector))
+(defvar *fox5-footer-magic-string*
+  (flexi-streams:string-to-octets "FOX5.1.1")
+  "FOX5 magic string, denoting the format version.")
 
-(defvar *list-levels*
-  '(file object shape frame sprite))
+(defvar *fox5-list-levels*
+  '(file object shape frame sprite)
+  "The currently supported FOX5 list levels, 0-indexed.")

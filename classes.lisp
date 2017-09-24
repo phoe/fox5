@@ -8,13 +8,17 @@
 (defclass fox5-class ()
   ((%children :initarg :children
               :accessor children
-              :initform nil)))
+              :initform nil))
+  (:documentation "Mixin for all FOX5 classes."))
 
 (defclass file (fox5-class)
   ((%image-list :initarg :image-list
                 :accessor image-list)
    (%generator :initarg :generator
-               :accessor generator)))
+               :accessor generator))
+  (:documentation #.(format nil "FOX5 file class, symbolizing a complete, ~
+parsed FOX5 file, including all images. Each file on disk has exactly one file ~
+object.")))
 
 (defclass object (fox5-class)
   ((%object-id :accessor object-id
@@ -33,7 +37,8 @@
    (%flags :initarg :flags
            :accessor flags)
    (%more-flags :accessor more-flags) ;; TODO parse this
-   (%fx-filter :accessor fx-filter)))
+   (%fx-filter :accessor fx-filter))
+  (:documentation #.(format nil "FOX5 object class.")))
 
 (defclass shape (fox5-class)
   ((%purpose :initarg :purpose
@@ -45,7 +50,8 @@
    (%ratio :initarg :ratio
            :accessor ratio)
    (%kitterspeak :initarg :kitterspeak
-                 :accessor kitterspeak)))
+                 :accessor kitterspeak))
+  (:documentation #.(format nil "FOX5 shape class.")))
 
 (defclass frame (fox5-class)
   ((%frame-offset :initarg :frame-offset
@@ -53,7 +59,8 @@
                   :initform '(:x 0 :y 0))
    (%furre-offset :initarg :furre-offset
                   :accessor furre-offset
-                  :initform '(:x 0 :y 0))))
+                  :initform '(:x 0 :y 0)))
+  (:documentation #.(format nil "FOX5 frame class.")))
 
 (defclass sprite (fox5-class)
   ((%purpose :initarg :purpose
@@ -61,11 +68,14 @@
    (%image-id :initarg :image-id
               :accessor image-id)
    (%offset :initarg :offset
-            :accessor offset)))
+            :accessor offset))
+  (:documentation #.(format nil "FOX5 sprite class.")))
 
 (defclass image (fox5-class)
   ((%compressed-size :accessor compressed-size
                      :initarg :compressed-size)
+   (%compressed-data :accessor compressed-data
+                     :initarg :compressed-data)
    (%width :accessor width
            :initarg :width)
    (%height :accessor height
@@ -73,4 +83,5 @@
    (%format :accessor image-format
             :initarg :format)
    (%data :accessor data
-          :initarg :data)))
+          :initarg :data))
+  (:documentation #.(format nil "FOX5 image class.")))
