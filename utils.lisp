@@ -52,6 +52,7 @@ are bound in that instance."
           do (replace result vector :start1 i)
           finally (return result))))
 
+;;; TODO turn into functions
 (defmacro rassoc-value-or-die (alist key &key (test ''eql))
   "Like ALEXANDRIA:RASSOC-VALUE, except it signals an error if the value is
 not found."
@@ -73,6 +74,22 @@ not found."
            value
            (error "~A of ~A was not found in ~A."
                   'assoc ,key ',alist)))))
+
+(defun print-hash-table-readably (hash-table
+                                  &optional (stream *standard-output*))
+  "Prints a hash table readably using ALEXANDRIA:ALIST-HASH-TABLE."
+  (let ((test (hash-table-test hash-table))
+        (*print-circle* t))
+    (format stream "#.(ALEXANDRIA:ALIST-HASH-TABLE~%")
+    (format stream "'~S~%" (hash-table-alist hash-table))
+    (format stream "  :TEST '~A)" test)
+    nil))
+
+(defun read-data-file (pathname)
+  "Reads the data file from the provided pathname. The pathname should be
+a system relative pathname."
+  (let ((full-pathname (asdf:system-relative-pathname :fox5 pathname)))
+    (with-input-from-file (stream full-pathname) (read stream))))
 
 ;;; The following function, ROBUST-SUBSEQ, was taken from
 ;;; https://github.com/death/gnusdumps and is MIT-licensed.

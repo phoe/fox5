@@ -1,14 +1,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; FOX5
 ;;;; © Michał "phoe" Herda 2017
-;;;; skippy.lisp
+;;;; skippy-renderer.lisp
 
-(in-package :skippy)
+(defpackage #:skippy/renderer
+  (:use #:cl #:skippy)
+  (:export #:render))
+
+(in-package :skippy/renderer)
 
 ;;; TODO implement "Restore to Previous"
-;;; TODO export this as a pluggable SKIPPY module
-
-(export 'render)
 
 (defun render (data-stream)
   "Given a GIF data stream, returns a rendered image. Three values are returned.
@@ -35,10 +36,13 @@ generalized boolean signifying if the GIF should loop."
                                 (list width height loopingp)))))
 
 (defun render-image-to-frame (frame frame-width image &optional color-table)
-  (let ((disposal-method (disposal-method image)))
-    (when (eq disposal-method :restore-background)
-      (loop for i below (array-total-size (image-data image))
-            do (setf (aref (image-data image) i) 0))))
+  (let ((data-size (array-total-size (image-data image)))
+        (disposal-method (disposal-method image)))
+    (case disposal-method
+      (:restore-background (loop with data = (image-data image)
+                                 for i below data-size
+                                 do (setf (aref data i) 0)))
+      (:restore-previous (error "Not implemented yet." #| TODO |#))))
   (loop with color-table = (or (color-table image) color-table)
         with t-index = (transparency-index image)
         with width = (width image)

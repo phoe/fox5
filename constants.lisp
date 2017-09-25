@@ -12,3 +12,6 @@
 (defvar *fox5-list-levels*
   '(file object shape frame sprite)
   "The currently supported FOX5 list levels, 0-indexed.")
+
+(defparameter *fox5-generator-number* 200
+  "The file generator number for FOX5 library.")

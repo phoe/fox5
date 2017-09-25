@@ -52,4 +52,23 @@ footer, decompresses all images and stores them inside the file object."
 
 (defun clean-compressed-images (file)
   (dolist (image (image-list file))
+    (slot-makunbound image '%compressed-size)
     (slot-makunbound image '%compressed-data)))
+
+(defun draw-png (image pathname)
+  "Renders a single FOX5 image into a PNG, saved under the provided filename."
+  (let* ((width (width image))
+         (height (height image))
+         (buffer (make-input-buffer :vector (data image)))
+         (png (make-instance 'zpng:pixel-streamed-png
+                             :color-type :truecolor-alpha
+                             :width width :height height)))
+    (with-output-to-binary (stream pathname)
+      (zpng:start-png png stream)
+      (loop repeat (* width height)
+            for a = (fast-read-byte buffer)
+            for r = (fast-read-byte buffer)
+            for g = (fast-read-byte buffer)
+            for b = (fast-read-byte buffer)
+            do (zpng:write-pixel (list r g b a) png))
+      (zpng:finish-png png))))
