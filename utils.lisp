@@ -5,6 +5,8 @@
 
 (in-package :fox5)
 
+;;; TODO Migrate to PHOE-TOOLBOX
+
 (defun octetize (string &optional (external-format :utf-8))
   "Shortcut for FLEXI-STREAMS:STRING-TO-OCTETS."
   (flexi-streams:string-to-octets string :external-format external-format))
@@ -52,28 +54,21 @@ are bound in that instance."
           do (replace result vector :start1 i)
           finally (return result))))
 
-;;; TODO turn into functions
-(defmacro rassoc-value-or-die (alist key &key (test ''eql))
+(defun rassoc-value-or-die (alist key &key (test 'eql))
   "Like ALEXANDRIA:RASSOC-VALUE, except it signals an error if the value is
 not found."
-  (once-only (key)
-    `(multiple-value-bind (value foundp)
-         (rassoc-value ,alist ,key ,@(when test `(:test ,test)))
-       (if foundp
-           value
-           (error "~A of ~A was not found in ~A."
-                  'rassoc ,key ',alist)))))
+  (multiple-value-bind (value foundp)
+      (alexandria:rassoc-value alist key :test test)
+    (if foundp value
+        (error "RASSOC of ~A was not found in ~A." key alist))))
 
-(defmacro assoc-value-or-die (alist key &key (test ''eql))
+(defun assoc-value-or-die (alist key &key (test ''eql))
   "Like ALEXANDRIA:ASSOC-VALUE, except it signals an error if the value is
 not found."
-  (once-only (key)
-    `(multiple-value-bind (value foundp)
-         (assoc-value ,alist ,key ,@(when test `(:test ,test)))
-       (if foundp
-           value
-           (error "~A of ~A was not found in ~A."
-                  'assoc ,key ',alist)))))
+  (multiple-value-bind (value foundp)
+      (alexandria:assoc-value alist key :test test)
+    (if foundp value
+        (error "ASSOC of ~A was not found in ~A." key alist))))
 
 (defun print-hash-table-readably (hash-table
                                   &optional (stream *standard-output*))
