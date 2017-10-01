@@ -40,7 +40,7 @@ all valid color types and their respective gradients."
       (mapc #'generate *color-types*)
       result)))
 
-(defun remap (image-data &optional color-code)
+(defun remap (image-data color-code)
   "Provided an ARGB image data and a color code, returns a fresh copy of the
 image data with all eligible pixels remapped."
   (check-type image-data vector)

@@ -33,21 +33,4 @@
                ;; REMAP
                (:file "remap/constants")
                (:file "remap/remap")
-               #|
-               (:file "constants")
-               (:file "utils")
-               (:file "header")
-               (:file "classes")
-               (:file "command-block")
-               (:file "parsers")
-               (:file "images")
-               (:file "skippy")
-               (:file "gif")
-               (:file "writers")
-               (:file "fox5")
-               (:file "palettes")
-               (:file "palettes-data")
-               (:file "write-file")
-               (:file "furcadia")
-               |#
-))
+               ))

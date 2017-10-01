@@ -5,7 +5,7 @@
 
 (in-package #:fox5)
 
-(defun read-fox5 (pathname)
+(defun read-fox5 (pathname &optional (embed-images-p t))
   #.(format nil "Reads the FOX5 file from the provided file and returns the ~
 parsed FOX5 file object.")
   (with-input-from-binary (stream pathname)
@@ -15,7 +15,8 @@ parsed FOX5 file object.")
            (footer (parse-footer vector))
            (command-block (load-command-block stream footer))
            (file (parse-command-block command-block)))
-      (embed-images file stream footer)
+      (when embed-images-p
+        (embed-images file stream footer))
       file)))
 
 (defun write-fox5 (file pathname &optional preserve-compressed-p)
