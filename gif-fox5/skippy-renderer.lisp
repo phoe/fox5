@@ -36,12 +36,10 @@ generalized boolean signifying if the GIF should loop."
                                 (list width height loopingp)))))
 
 (defun render-image-to-frame (frame frame-width image &optional color-table)
-  (let ((data-size (array-total-size (image-data image)))
-        (disposal-method (disposal-method image)))
+  (let ((disposal-method (disposal-method image)))
     (case disposal-method
-      (:restore-background (loop with data = (image-data image)
-                                 for i below data-size
-                                 do (setf (aref data i) 0)))
+      (:restore-background (loop for i below (array-dimension frame 0)
+                                 do (setf (aref frame i) 0)))
       (:restore-previous (error "Not implemented yet." #| TODO |#))))
   (loop with color-table = (or (color-table image) color-table)
         with t-index = (transparency-index image)
