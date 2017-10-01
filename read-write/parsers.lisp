@@ -55,16 +55,18 @@ requires a slightly different technique."
          (class (nth level *fox5-list-levels*))
          (*parent-object* *current-object*)
          (*current-object* (make-instance class)))
-    (loop with i = 0
-          for command = (code-char (readu8-be buffer))
-          if (eql command #\<)
-            do (incf i)
-               (unless *parent-object*
-                 (return *current-object*))
-               (push *current-object* (children *parent-object*))
-               (setf *current-object* (make-instance class))
-               (when (= i count) (return))
-          else do (read-command command buffer))))
+    (prog1 (loop with i = 0
+                 for command = (code-char (readu8-be buffer))
+                 if (eql command #\<)
+                   do (incf i)
+                      (unless *parent-object*
+                        (return *current-object*))
+                      (push *current-object* (children *parent-object*))
+                      (setf *current-object* (make-instance class))
+                      (when (= i count) (return))
+                 else do (read-command command buffer))
+      (setf (children *current-object*)
+            (nreverse (children *current-object*))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; File commands
@@ -263,7 +265,7 @@ requires a slightly different technique."
     (12 . :screen) (14 . :subtract) (15 . :alpha) (16 . :erase)))
 
 (define-fox5-reader (#x46 buffer 'object)
-  (flet ((blend-mode (byte) (assoc-value-or-die byte *fox5-object-fx-filter*)))
+  (flet ((blend-mode (byte) (assoc-value-or-die *fox5-object-fx-filter* byte)))
     (setf (fx-filter *current-object*)
           (list :target-layer (ecase (readu8-be buffer) (0 :vb) (1 :sfx))
                 :blend-mode (blend-mode (readu8-be buffer))))))
@@ -274,7 +276,7 @@ requires a slightly different technique."
   (let* ((target-layer (getf fx-filter :target-layer))
          (blend-mode (getf fx-filter :blend-mode))
          (target-layer (ecase target-layer (:vb 0) (:sfx 1)))
-         (blend-mode (rassoc-value-or-die blend-mode *fox5-object-fx-filter*)))
+         (blend-mode (rassoc-value-or-die *fox5-object-fx-filter* blend-mode)))
     (writeu8-be target-layer buffer)
     (writeu8-be blend-mode buffer)))
 

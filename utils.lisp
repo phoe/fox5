@@ -62,7 +62,7 @@ not found."
     (if foundp value
         (error "RASSOC of ~A was not found in ~A." key alist))))
 
-(defun assoc-value-or-die (alist key &key (test ''eql))
+(defun assoc-value-or-die (alist key &key (test 'eql))
   "Like ALEXANDRIA:ASSOC-VALUE, except it signals an error if the value is
 not found."
   (multiple-value-bind (value foundp)
