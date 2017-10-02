@@ -9,3 +9,7 @@
         #:alexandria
         #:cl-lzma)
   (:shadow #:ratio))
+
+(defpackage #:fox5/gif-fox5
+  (:use #:cl
+        #:fox5))

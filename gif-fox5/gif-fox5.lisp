@@ -21,7 +21,7 @@ saves the result under the provided filename."
   (values))
 
 (defun gif-to-images (gif)
-  (multiple-value-bind (arrays delays data) (skippy/renderer:render gif)
+  (multiple-value-bind (arrays delays data) (skippy-renderer:render gif)
     (destructuring-bind (width height loopingp) data
       (declare (ignore loopingp))
       (values (mapcar (curry #'make-instance 'image
