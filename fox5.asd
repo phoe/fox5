@@ -11,6 +11,7 @@
   :depends-on (#:fast-io
                #:cl-lzma
                #:flexi-streams
+               #:phoe-toolbox
                #:zpng
                #:vecto
                #:closer-mop
@@ -29,7 +30,7 @@
                (:file "read-write/parsers")
                (:file "read-write/file")
                ;; GIF-FOX5
-               (:file "gif-fox5/gif-fox5")
+               ;;(:file "gif-fox5/gif-fox5")
                ;; REMAP
                (:file "remap/constants")
                (:file "remap/remap")

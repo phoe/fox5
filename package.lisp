@@ -4,12 +4,37 @@
 ;;;; package.lisp
 
 (defpackage #:fox5
-  (:use #:cl
-        #:fast-io
-        #:alexandria
-        #:cl-lzma)
-  (:shadow #:ratio))
-
-(defpackage #:fox5/gif-fox5
-  (:use #:cl
-        #:fox5))
+  (:use
+   #:cl
+   #:fast-io
+   #:phoe-toolbox
+   #:alexandria
+   #:cl-lzma)
+  (:shadow #:ratio)
+  (:export
+   ;; classes
+   #:file #:object #:shape #:frame #:sprite #:image
+   ;; accessors - generic
+   #:children
+   ;; accessors - file
+   #:image-list #:generator
+   ;; accessors - object
+   #:object-id #:name #:description #:authors #:revisions #:keywords #:license
+   #:portal #:edit-type #:flags #:more-flags #:fx-filter
+   ;; accessors - shape
+   #:purpose #:direction #:state #:ratio #:kitterspeak
+   ;; accessors - frame
+   #:frame-offset #:furre-offset
+   ;; accessors - sprite
+   #:purpose #:image-id #:offset
+   ;; accessors - image
+   #:compressed-size #:compressed-data #:decompressed-size #:width #:height
+   #:image-format #:data
+   ;; constants
+   #:*fox5-footer-magic-string* #:*fox5-list-levels* #:*fox5-generator-number*
+   ;; read/write
+   #:read-fox5 #:write-fox5
+   ;; colors, TODO move to separate data package
+   #:color #:*color-types* #:*gradients* #:*color-names* #:*color-values*
+   #:*color-code-indices* #:*genders*
+   ))

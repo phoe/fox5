@@ -3,7 +3,21 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; gif-fox5.lisp
 
-(in-package :fox5)
+(defpackage #:fox5/gif-fox5
+  (:use
+   #:cl
+   #:alexandria
+   #:phoe-toolbox
+   #:fox5
+   #:skippy-renderer)
+  (:shadowing-import-from
+   #:fox5
+   #:ratio)
+  (:export
+   #:gif-fox5
+   #:validate-gif))
+
+(in-package :fox5/gif-fox5)
 
 (defun gif-fox5 (input-filename output-filename)
   "Loads the GIF file from the provided filename, converts it to a FOX5 file and

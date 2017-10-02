@@ -22,7 +22,7 @@ object.")))
 
 (defclass object (fox5-class)
   ((%object-id :accessor object-id
-               :initarg :object-id)
+               :initarg :object-id) ;; TODO change to ID
    (%name :accessor name
           :initarg :name)
    (%description :accessor description)
