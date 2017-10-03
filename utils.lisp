@@ -18,9 +18,3 @@ many characters and puts them in the string."
          (vector (make-octet-vector n)))
     (fast-io:fast-read-sequence vector buffer)
     (octetize vector external-format)))
-
-(defun read-data-file (pathname)
-  "Reads the data file from the provided pathname. The pathname should be
-a system relative pathname."
-  (let ((full-pathname (asdf:system-relative-pathname :fox5 pathname)))
-    (with-input-from-file (stream full-pathname) (read stream))))

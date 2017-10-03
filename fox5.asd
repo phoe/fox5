@@ -29,9 +29,4 @@
                (:file "read-write/framework")
                (:file "read-write/parsers")
                (:file "read-write/file")
-               ;; GIF-FOX5
-               ;;(:file "gif-fox5/gif-fox5")
-               ;; REMAP
-               (:file "remap/constants")
-               (:file "remap/remap")
                ))
