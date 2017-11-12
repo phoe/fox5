@@ -3,7 +3,7 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; classes.lisp
 
-(in-package #:fox5)
+(in-package :fox5/base)
 
 (defclass fox5-class ()
   ((%children :initarg :children

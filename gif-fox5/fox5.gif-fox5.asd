@@ -9,5 +9,5 @@
   :license "BSD 3-clause"
   :serial t
   :depends-on (#:skippy-renderer
-               #:fox5)
+               #:fox5.base)
   :components ((:file "gif-fox5")))

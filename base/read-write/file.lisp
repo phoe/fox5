@@ -3,7 +3,7 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; read-write-file.lisp
 
-(in-package #:fox5)
+(in-package :fox5/base)
 
 (defun read-fox5 (pathname &optional (embed-images-p t))
   #.(format nil "Reads the FOX5 file from the provided file and returns the ~

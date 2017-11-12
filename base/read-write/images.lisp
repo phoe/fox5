@@ -3,7 +3,7 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; images.lisp
 
-(in-package :fox5)
+(in-package :fox5/base)
 
 (defun embed-images (file stream footer)
   "Given a FOX5 file object, a stream pointing to a file and a parsed FOX5

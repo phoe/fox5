@@ -3,7 +3,7 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; read-write-base.lisp
 
-(in-package :fox5)
+(in-package :fox5/base)
 
 (defvar *current-object* nil
   #.(format nil "The FOX5 object that is currently being read.

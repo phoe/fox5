@@ -8,10 +8,10 @@
    #:cl
    #:alexandria
    #:phoe-toolbox
-   #:fox5
+   #:fox5/base
    #:skippy-renderer)
   (:shadowing-import-from
-   #:fox5
+   #:fox5/base
    #:ratio)
   (:export
    #:gif-fox5

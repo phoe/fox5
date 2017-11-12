@@ -4,29 +4,10 @@
 ;;;; fox5.asd
 
 (asdf:defsystem #:fox5
-  :description "Library for encoding/decoding/manipulating Furcadia FOX5 files"
+  :description "Library for manipulating Furcadia FOX5 files - full system"
   :author "Michał \"phoe\" Herda <phoe@openmailbox.org>"
   :license "BSD 3-clause"
   :serial t
-  :depends-on (#:fast-io
-               #:cl-lzma
-               #:flexi-streams
-               #:phoe-toolbox
-               #:zpng
-               #:vecto
-               #:closer-mop
-               #:skippy
-               #:skippy-renderer
-               #:alexandria)
-  :components ((:file "package")
-               (:file "classes")
-               (:file "utils")
-               (:file "constants")
-               ;; READ-WRITE
-               (:file "read-write/footer")
-               (:file "read-write/command-block")
-               (:file "read-write/images")
-               (:file "read-write/framework")
-               (:file "read-write/parsers")
-               (:file "read-write/file")
-               ))
+  :depends-on (#:fox5.base
+               #:fox5.gif-fox5)
+  :components ((:file "package")))
