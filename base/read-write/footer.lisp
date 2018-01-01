@@ -5,7 +5,7 @@
 
 (in-package :fox5/base)
 
-(defclass fox5-footer ()
+(defclass footer ()
   ((%compression-type :accessor compression-type
                       :initarg :compression-type)
    (%encryption :accessor encryption
@@ -26,7 +26,7 @@
 (defun parse-footer (footer)
   "Parses the provided FOX5 footer and returns its parsed form."
   (let ((buffer (make-input-buffer :vector footer))
-        (instance (make-instance 'fox5-footer)))
+        (instance (make-instance 'footer)))
     (setf (compression-type instance)
           (ecase (read8-be buffer) (1 :zlib) (2 :lzma))
           (encryption instance)
@@ -51,7 +51,7 @@ otherwise."
       (fast-write-byte (fast-read-byte buffer) magic-buffer)
       (finish-output-buffer magic-buffer))
     (when (equal (coerce magic-string 'list)
-                 (coerce *fox5-footer-magic-string* 'list))
+                 (coerce *footer-magic-string* 'list))
       t)))
 
 (defun write-footer (buffer)
@@ -61,4 +61,4 @@ otherwise."
   (writeu16-be #x00 buffer) ;; reserved bytes
   (writeu32-be (compressed-size *footer*) buffer)
   (writeu32-be (decompressed-size *footer*) buffer)
-  (fast-write-sequence *fox5-footer-magic-string* buffer))
+  (fast-write-sequence *footer-magic-string* buffer))

@@ -12,7 +12,13 @@
   (:documentation "Mixin for all FOX5 classes."))
 
 (defclass file (fox5-class)
-  ((%image-list :initarg :image-list
+  (;; data-handling slots
+   (%footer :initarg :footer
+            :accessor footer)
+   (%filepath :initarg :filepath
+              :accessor filepath)
+   ;; fox5 slots
+   (%image-list :initarg :image-list
                 :accessor image-list)
    (%generator :initarg :generator
                :accessor generator))
@@ -72,7 +78,9 @@ object.")))
   (:documentation #.(format nil "FOX5 sprite class.")))
 
 (defclass image (fox5-class)
-  ((%compressed-size :accessor compressed-size
+  ((%file :accessor file
+          :initarg :file)
+   (%compressed-size :accessor compressed-size
                      :initarg :compressed-size)
    (%compressed-data :accessor compressed-data
                      :initarg :compressed-data)
@@ -82,6 +90,11 @@ object.")))
             :initarg :height)
    (%format :accessor image-format
             :initarg :format)
-   (%data :accessor data
+   (%data :writer (setf data)
           :initarg :data))
   (:documentation #.(format nil "FOX5 image class.")))
+
+(defmethod data ((image image))
+  (unless (slot-boundp image '%data)
+    (embed-image image))
+  (slot-value image '%data))

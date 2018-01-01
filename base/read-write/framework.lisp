@@ -43,6 +43,8 @@ DEFINE-FOX5-WRITER macro.")))
 
 ;;; TODO update all reader methods for misplaced commands, right now they
 ;;; will blow up on encountering one
+;;; TODO maybe just define a generic method that calls CL:WARN to print a
+;;; message to the user, and otherwise does nothing?
 (defmacro define-fox5-reader ((byte buffer
                                &optional (object-class 't)) &body body)
   #.(format nil "Defines a reader for the FOX5 command designated by the ~

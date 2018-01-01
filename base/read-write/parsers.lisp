@@ -86,7 +86,8 @@ requires a slightly different technique."
 ;;; File > Images
 (define-fox5-reader (#x53 buffer 'file)
   (flet ((parse-image (buffer)
-           (make-instance 'image :compressed-size (readu32-be buffer)
+           (make-instance 'image :file *current-object*
+                                 :compressed-size (readu32-be buffer)
                                  :width (readu16-be buffer)
                                  :height (readu16-be buffer)
                                  :format (ecase (readu8-be buffer)

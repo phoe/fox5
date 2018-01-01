@@ -8,6 +8,7 @@
 (defun read-fox5 (pathname &optional (embed-images-p t))
   #.(format nil "Reads the FOX5 file from the provided file and returns the ~
 parsed FOX5 file object.")
+  (unless (pathnamep pathname) (setf pathname (pathname pathname)))
   (with-input-from-binary (stream pathname)
     (unless (validate-footer-magic-string stream)
       (error "Not a FOX5 file: ~A" pathname))
@@ -15,8 +16,10 @@ parsed FOX5 file object.")
            (footer (parse-footer vector))
            (command-block (load-command-block stream footer))
            (file (parse-command-block command-block)))
+      (setf (filepath file) pathname
+            (footer file) footer)
       (when embed-images-p
-        (embed-images file stream footer))
+        (mapc (curry #'embed-image file) (image-list file)))
       file)))
 
 (defun write-fox5 (file pathname &optional preserve-compressed-p)

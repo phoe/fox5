@@ -5,7 +5,7 @@
 
 (in-package :fox5/base)
 
-(defvar *fox5-footer-magic-string*
+(defvar *footer-magic-string*
   (flexi-streams:string-to-octets "FOX5.1.1")
   "FOX5 magic string, denoting the format version.")
 
