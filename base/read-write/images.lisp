@@ -79,8 +79,7 @@
                 (fast-write-sequence props-encoded buffer)
                 (writeu64-le decompressed-size buffer)
                 (fast-write-sequence compressed-block buffer))))
-        (setf (compressed-size image) (length compressed-data)
-              (compressed-data image) compressed-data)))))
+        (setf (compressed-data image) compressed-data)))))
 
 (defun clean-compressed-images (file)
   (dolist (image (image-list file))

@@ -242,12 +242,12 @@ requires a slightly different technique."
 ;;; Object > ID
 (define-fox5-reader (#x69 buffer 'object)
   (let ((byte (read32-be buffer)))
-    (setf (object-id *current-object*)
+    (setf (id *current-object*)
           (if (= byte -1) :default byte))))
 
-(define-fox5-writer (object object-id buffer)
+(define-fox5-writer (object id buffer)
   (writeu8-be #x69 buffer)
-  (let ((byte (if (eq object-id :default) -1 object-id)))
+  (let ((byte (if (eq id :default) -1 id)))
     (writeu32-be byte buffer)))
 
 ;;; Object > Edit Type

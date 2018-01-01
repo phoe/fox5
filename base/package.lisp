@@ -17,9 +17,9 @@
    ;; accessors - generic
    #:children
    ;; accessors - file
-   #:image-list #:generator
+   #:footer #:filepath #:image-list #:generator
    ;; accessors - object
-   #:object-id #:name #:description #:authors #:revisions #:keywords #:license
+   #:id #:name #:description #:authors #:revisions #:keywords #:license
    #:portal #:edit-type #:flags #:more-flags #:fx-filter
    ;; accessors - shape
    #:purpose #:direction #:state #:ratio #:kitterspeak
@@ -28,13 +28,9 @@
    ;; accessors - sprite
    #:purpose #:image-id #:offset
    ;; accessors - image
-   #:compressed-size #:compressed-data #:decompressed-size #:width #:height
-   #:image-format #:data
+   #:file #:compressed-size #:compressed-data #:width #:height #:image-format
+   #:data
    ;; constants
    #:*fox5-footer-magic-string* #:*fox5-list-levels* #:*fox5-generator-number*
    ;; read/write
-   #:read-fox5 #:write-fox5
-   ;; colors, TODO move to separate data package
-   #:color #:*color-types* #:*gradients* #:*color-names* #:*color-values*
-   #:*color-code-indices* #:*genders*
-   ))
+   #:read-fox5 #:write-fox5))
