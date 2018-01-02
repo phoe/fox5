@@ -9,7 +9,9 @@
    #:fast-io
    #:phoe-toolbox
    #:alexandria
-   #:cl-lzma)
+   #:cl-lzma
+   #:static-vectors
+   #:trivial-garbage)
   (:shadow #:ratio)
   (:export
    ;; classes

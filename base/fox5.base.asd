@@ -15,6 +15,8 @@
                #:phoe-toolbox
                #:zpng
                #:vecto
+               #:static-vectors
+               #:trivial-garbage
                #:closer-mop)
   :components ((:file "package")
                (:file "classes")
