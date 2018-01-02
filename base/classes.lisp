@@ -95,7 +95,7 @@ demand by #'DATA to conserve resources.")))
   (:documentation "FOX5 image class."))
 
 (defmethod compressed-size ((image image))
-  (if (slot-boundp image 'compressed-data)
+  (if (slot-boundp image '%compressed-data)
       (length (compressed-data image))
       (slot-value image '%compressed-size)))
 
