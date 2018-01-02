@@ -7,7 +7,6 @@
 
 ;;; TODO rewrite everything using FAST-IO instead of using raw Lisp stream
 ;;; reading functions
-;;; TODO rewrite CL-LZMA using static-vectors
 (defun embed-image (image)
   (let* ((file (file image))
          (footer (footer file))
@@ -18,10 +17,9 @@
          (total-size (+ command-block-size compressed-sizes)))
     (with-input-from-binary (stream (filepath file))
       (file-position stream total-size)
-      (let* ((buffer (make-input-buffer :stream stream))
-             (format (image-format image)))
+      (let* ((buffer (make-input-buffer :stream stream)))
         (let ((decompressed (decompress-from-buffer buffer))
-              (multiplier (ecase format (:8-bit 1) (:32-bit 4))))
+              (multiplier (ecase (image-format image) (:8-bit 1) (:32-bit 4))))
           (assert (= (length decompressed)
                      (* multiplier (width image) (height image))))
           (setf (data image) decompressed)
@@ -59,10 +57,13 @@
                              :width width :height height)))
     (with-output-to-binary (stream pathname)
       (zpng:start-png png stream)
-      (loop repeat (* width height)
-            for a = (fast-read-byte buffer)
-            for r = (fast-read-byte buffer)
-            for g = (fast-read-byte buffer)
-            for b = (fast-read-byte buffer)
-            do (zpng:write-pixel (list r g b a) png))
+      (let ((vector (make-array 4 :initial-element 0
+                                  :element-type '(unsigned-byte 8))))
+        (declare (dynamic-extent vector))
+        (loop repeat (* width height)
+              do (setf (aref vector 3) (fast-read-byte buffer)
+                       (aref vector 0) (fast-read-byte buffer)
+                       (aref vector 1) (fast-read-byte buffer)
+                       (aref vector 2) (fast-read-byte buffer))
+                 (zpng:write-pixel vector png)))
       (zpng:finish-png png))))
