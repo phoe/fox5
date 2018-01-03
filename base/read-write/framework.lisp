@@ -41,6 +41,11 @@ value of SLOT-NAME in OBJECT into the provided bugger.
 Methods on this generic function are expected to be established using the ~
 DEFINE-FOX5-WRITER macro.")))
 
+(defmethod write-command (object slot-name buffer)
+  "The base WRITE-COMMAND method that does nothing. Used for slots that are
+not defined to be written."
+  (declare (ignore object slot-name buffer)))
+
 ;;; TODO update all reader methods for misplaced commands, right now they
 ;;; will blow up on encountering one
 ;;; TODO maybe just define a generic method that calls CL:WARN to print a
