@@ -57,16 +57,18 @@ requires a slightly different technique."
          (*current-object* (make-instance class)))
     (prog1 (loop with i = 0
                  for command = (code-char (readu8-be buffer))
-                 if (eql command #\<)
+                 if (eql command (code-char #x3C))
                    do (incf i)
-                      (unless *parent-object*
-                        (return *current-object*))
+                      (unless *parent-object* (return *current-object*))
                       (push *current-object* (children *parent-object*))
                       (setf *current-object* (make-instance class))
                       (when (= i count) (return))
                  else do (read-command command buffer))
       (setf (children *current-object*)
             (nreverse (children *current-object*))))))
+
+(define-fox5-reader (#x3C buffer)
+  (error "Unexpected #x3C (#\<) encountered when reading."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; File commands
@@ -278,7 +280,6 @@ requires a slightly different technique."
           (list :target-layer (ecase (readu8-be buffer) (0 :vb) (1 :sfx))
                 :blend-mode (blend-mode (readu8-be buffer))))))
 
-;;; TODO slurp first two arguments on all DEFINE-FOX5-WRITERS
 (define-fox5-writer (object fx-filter buffer)
   (writeu8-be #x46 buffer)
   (let* ((target-layer (getf fx-filter :target-layer))
@@ -293,10 +294,14 @@ requires a slightly different technique."
 
 ;;; Shape > Purpose
 (defparameter *fox5-shape-purpose*
-  '((0 . nil) (1 . :menu-icon) (2 . :ui-button) (3 . :butler) (4 . :portrait)
-    (5 . :ds-button) (11 . :avatar) (21 . :floor) (22 . :item) (23 . :wall)
-    (24 . :region) (25 . :effect) (28 . :pad-item) (29 . :portal-item)
-    (35 . :specitag) (41 . :lighting) (42 . :ambience)))
+  '((0 . nil)
+    (1 . :menu-icon) (2 . :ui-button) (3 . :butler) (4 . :portrait)
+    (5 . :ds-button)
+    (11 . :avatar)
+    (21 . :floor) (22 . :item) (23 . :wall) (24 . :region) (25 . :effect)
+    (28 . :pad-item) (29 . :portal-item)
+    (35 . :specitag)
+    (41 . :lighting) (42 . :ambience)))
 
 (define-fox5-reader (#x70 buffer 'shape)
   (flet ((purpose (byte) (assoc-value-or-die *fox5-shape-purpose* byte)))
