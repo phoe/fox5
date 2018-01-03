@@ -138,7 +138,7 @@ requires a slightly different technique."
              (fast-write-sequence octets buffer))))
 
 ;;; Object > License
-(defvar *fox5-object-license*
+(defparameter *fox5-object-license*
   '((0 . :fc-by-sa) (1 . :fc0)
     (2 . :fc-by-nc-sa) (3 . :fc-nd-nc-sa)
     (4 . :fc-private-sa) (5 . :fc-by-x-sa)))
@@ -197,7 +197,7 @@ requires a slightly different technique."
     (fast-write-sequence octets buffer)))
 
 ;;; Object > Flags
-(defvar *fox5-object-flags*
+(defparameter *fox5-object-flags*
   '(:walkable :gettable :sittable :flyable
     :swimmable :clickable :highlightable :kickable))
 
@@ -251,16 +251,23 @@ requires a slightly different technique."
     (writeu32-be byte buffer)))
 
 ;;; Object > Edit Type
+(defparameter *fox5-object-edit-type*
+  '((0 . nil) (1 . :floor) (2 . :item) (3 . :effect) (4 . :portrait-set)
+    (5 . :avatar) (6 . :gendered-avatar) (7 . :region) (8 . :wall)
+    (10 . :lighting) (11 . :ambience) (12 . :button) (13 . :ds-button)
+    (14 . :system) (15 . :portal)))
+
 (define-fox5-reader (#x74 buffer 'object)
   (setf (edit-type *current-object*)
-        (readu8-be buffer)))
+        (assoc-value-or-die *fox5-object-edit-type* (readu8-be buffer))))
 
 (define-fox5-writer (object edit-type buffer)
   (writeu8-be #x74 buffer)
-  (writeu8-be edit-type buffer))
+  (let ((edit-type (rassoc-value-or-die *fox5-object-edit-type* edit-type)))
+    (writeu8-be edit-type buffer)))
 
 ;;; Object > FX Filter
-(defvar *fox5-object-fx-filter*
+(defparameter *fox5-object-fx-filter*
   '((0 . nil) (1 . :addition) (4 . :darken) (5 . :difference) (7 . :hard-light)
     (8 . :lighten) (9 . :multiply) (10 . :normal) (11 . :overlay)
     (12 . :screen) (14 . :subtract) (15 . :alpha) (16 . :erase)))
@@ -285,7 +292,7 @@ requires a slightly different technique."
 ;;; Shape commands
 
 ;;; Shape > Purpose
-(defvar *fox5-shape-purpose*
+(defparameter *fox5-shape-purpose*
   '((0 . nil) (1 . :menu-icon) (2 . :ui-button) (3 . :butler) (4 . :portrait)
     (5 . :ds-button) (11 . :avatar) (21 . :floor) (22 . :item) (23 . :wall)
     (24 . :region) (25 . :effect) (28 . :pad-item) (29 . :portal-item)
@@ -312,7 +319,7 @@ requires a slightly different technique."
   (writeu8-be state buffer))
 
 ;;; Shape > Direction
-(defvar *fox5-shape-direction*
+(defparameter *fox5-shape-direction*
   '((0 . nil) (1 . :sw) (2 . :s) (3 . :se) (4 . :w) (5 . :none)
     (6 . :e) (7 . :nw) (8 . :n) (9 . :ne) (10 . :up) (11 . :down)))
 
@@ -383,7 +390,7 @@ requires a slightly different technique."
 ;;; Sprite commands
 
 ;;; Sprite > Purpose
-(defvar *fox5-sprite-purpose*
+(defparameter *fox5-sprite-purpose*
   '((#x00 . nil) (#x20 . :remapping-data)
     (#x40 . :shadow-layer) (#x80 . :markup-layer)))
 
