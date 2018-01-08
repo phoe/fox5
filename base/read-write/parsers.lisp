@@ -171,6 +171,7 @@ requires a slightly different technique."
 
 (define-fox5-writer (object keywords buffer)
   (writeu8-be #x6B buffer)
+  (writeu16-be (length keywords) buffer)
   (loop for string in keywords
         for octets = (octetize string)
         do (writeu16-be (length octets) buffer)

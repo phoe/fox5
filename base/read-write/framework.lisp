@@ -34,6 +34,29 @@ command from the provided buffer and updates the FOX5 object at
 Methods on this generic function are expected to be established using the ~
 DEFINE-FOX5-READER macro.")))
 
+;; TODO make PARENT slot inside class FOX5-CLASS to get rid of *PARENT-OBJECT*
+(defgeneric postprocess (object)
+  (:documentation #.(format nil "Postprocesses the contents of the FOX5 ~
+object after the initial reading of the FOX5 file. Postprocessing is required, ~
+as the results of some FOX5 commands may depend on other commands inside the ~
+same object or parent objects, and the required processing cannot be done ~
+as a part of the reader, since the order in which FOX5 commands appear is not ~
+specified. Therefore it is possible for the list of children to appear before ~
+the parent's properties are set, and the parent's properties may influence how ~
+the children's properties should be set.
+\
+Client code calling this function must appropriately bind *PARENT-OBJECT* ~
+to the parent of OBJECT.
+\
+Methods on this generic function are expected to be established using the ~
+DEFINE-FOX5-POSTPROCESSOR macro.")))
+
+(defmethod postprocess :after ((object fox5-class))
+  "The default :AFTER method for all FOX5 objects. All children of the object ~
+are postprocessed after its parent is postprocessed."
+  (let ((*parent-object* object))
+    (mapc #'postprocess (children object))))
+
 (defgeneric write-command (object slot-name buffer)
   (:documentation #.(format nil "Writes the FOX5 command representing the slot ~
 value of SLOT-NAME in OBJECT into the provided bugger.
