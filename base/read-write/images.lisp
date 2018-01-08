@@ -7,6 +7,7 @@
 
 ;;; TODO rewrite everything using FAST-IO instead of using raw Lisp stream
 ;;; reading functions
+;;; TODO: aren't we already using FAST-IO everywhere? c'mon, man
 (defun embed-image (image)
   (let* ((file (file image))
          (footer (footer file))
