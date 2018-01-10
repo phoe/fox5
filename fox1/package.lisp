@@ -8,5 +8,15 @@
    #:cl
    #:fast-io
    #:phoe-toolbox
-   #:alexandria)
-  (:export))
+   #:alexandria
+   #:cl-furcadia/constants)
+  (:export
+   ;; file
+   #:file #:version #:nshapes #:generator #:encryption #:shapes
+   ;; shape
+   #:shape #:walkablep #:gettablep #:sittablep #:index #:frames #:steps
+   ;; frame
+   #:frame #:width #:height #:position-x #:position-y #:furre-position-x
+   #:furre-position-y #:image-format #:image
+   ;; functions
+   #:read-fox1))

@@ -63,7 +63,7 @@ otherwise."
         (instance (make-instance 'file)))
     (let ((version (readu32-le buffer)))
       (case version
-        (1 (setf (version instance) version))
+        ((1 2) (setf (version instance) version))
         (t (error "Unimplemented FOX version ~D detected." version))))
     (setf (nshapes instance) (read32-le buffer)
           (generator instance)
@@ -119,16 +119,6 @@ otherwise."
       (setf (image frame) image))
     frame))
 
-(defparameter *fox1-steps*
-  '((1 . :frame) (2 . :delay) (3 . :loop) (4 . :jump) (5 . :posx) (6 . :posy)
-    (7 . :furrex) (8 . :furrey) (9 . :draw-front) (10 . :draw-behind)
-    (11 . :auto-frame-delay) (12 . :stop) (13 . :camera-state)
-    (14 . :rand-frame-delay) (15 . :shape-frame) (16 . :shape-frame)
-    (17 . :opacity) (18 . :slide-posx) (19 . :slide-posy) (20 . :slide-furrex)
-    (21 . :slide-furrey) (22 . :slide-opacity) (23 . :show-bgframe)
-    (24 . :show-fgframe) (25 . :show-bgshape) (26 . :show-fgshape)
-    (27 . :hide-bg) (28 . :hide-fg)))
-
 (defun parse-step (buffer)
-  (list (assoc-value-or-die *fox1-steps* (readu16-le buffer))
+  (list (assoc-value-or-die *kitterspeak* (readu16-le buffer))
         (readu16-le buffer) (readu16-le buffer)))

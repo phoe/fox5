@@ -13,6 +13,7 @@
                #:phoe-toolbox
                #:flexi-streams
                #:closer-mop
-               #:fox5.base)
+               ;;#:fox5.base
+               #:cl-furcadia.constants)
   :components ((:file "package")
                (:file "fox1")))
