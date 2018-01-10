@@ -31,16 +31,15 @@
    (%image :accessor image)))
 
 (defun read-fox1 (pathname)
+  "Reads the provided FOX1 file from the given pathname and returns its parsed
+representation."
   (unless (pathnamep pathname) (setf pathname (pathname pathname)))
   (with-input-from-binary (stream pathname)
     (unless (validate-magic-string stream)
       (error "Not a FOX1 file: ~A" pathname))
     (let* ((vector (load-header stream))
-           (header (parse-header vector))
-           (file (parse-file stream header)))
-      ;; (when embed-images-p
-      ;;   (mapc #'embed-image (image-list file)))
-      file)))
+           (header (parse-header vector)))
+      (parse-file stream header))))
 
 (defun validate-magic-string (stream)
   "Returns true if the file behind the provided stream is a FOX1 file, and false

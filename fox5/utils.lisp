@@ -3,7 +3,7 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; utils.lisp
 
-(in-package :fox5/base)
+(in-package :fox5/fox5)
 
 (defun octetize (string &optional (external-format :utf-8))
   "Shortcut for FLEXI-STREAMS:STRING-TO-OCTETS."

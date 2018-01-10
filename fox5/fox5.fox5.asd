@@ -1,9 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; FOX5
 ;;;; © Michał "phoe" Herda 2017
-;;;; fox5.base.asd
+;;;; fox5.fox5.asd
 
-(asdf:defsystem #:fox5.base
+(asdf:defsystem #:fox5.fox5
   :description "Library for manipulating Furcadia FOX5 files"
   :author "Michał \"phoe\" Herda <phoe@openmailbox.org>"
   :license "BSD 3-clause"

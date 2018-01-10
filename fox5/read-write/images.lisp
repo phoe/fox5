@@ -3,7 +3,7 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; images.lisp
 
-(in-package :fox5/base)
+(in-package :fox5/fox5)
 
 ;;; TODO rewrite everything using FAST-IO instead of using raw Lisp stream
 ;;; reading functions

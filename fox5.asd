@@ -8,6 +8,7 @@
   :author "Michał \"phoe\" Herda <phoe@openmailbox.org>"
   :license "BSD 3-clause"
   :serial t
-  :depends-on (#:fox5.base
+  :depends-on (#:fox5.fox5
+               #:fox5.fox5
                #:fox5.gif-fox5)
   :components ((:file "package")))

@@ -3,7 +3,7 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; constants.lisp
 
-(in-package :fox5/base)
+(in-package :fox5/fox5)
 
 (defvar *footer-magic-string*
   (flexi-streams:string-to-octets "FOX5.1.1")
