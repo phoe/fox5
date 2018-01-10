@@ -31,7 +31,7 @@
           (ecase (read8-be buffer) (1 :zlib) (2 :lzma))
           (encryption instance)
           (let ((byte (read8-be buffer)))
-            (ecase byte (0 :no) (t (list :yes byte)))))
+            (case byte (0 :no) (t (list :yes byte)))))
     (unless (eq (encryption instance) :no)
       (error "File is encrypted with encryption format ~D."
              (second (encryption instance))))
