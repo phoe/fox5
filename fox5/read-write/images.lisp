@@ -18,13 +18,12 @@
          (total-size (+ command-block-size compressed-sizes)))
     (with-input-from-binary (stream (filepath file))
       (file-position stream total-size)
-      (let* ((buffer (make-input-buffer :stream stream)))
-        (let ((decompressed (decompress-from-buffer buffer))
-              (multiplier (ecase (image-format image) (:8-bit 1) (:32-bit 4))))
-          (assert (= (length decompressed)
-                     (* multiplier (width image) (height image))))
-          (setf (data image) decompressed)
-          (finalize image (curry #'free-static-vector decompressed)))))))
+      (let ((decompressed (decompress-from-stream stream))
+            (multiplier (ecase (image-format image) (:8-bit 1) (:32-bit 4))))
+        (assert (= (length decompressed)
+                   (* multiplier (width image) (height image))))
+        (setf (data image) decompressed)
+        (finalize image (curry #'free-static-vector decompressed))))))
 
 ;;; TODO copy compressed data from original FOX5 instead of de- and
 ;;; recompressing them

@@ -3,11 +3,13 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; package.lisp
 
-(defpackage #:fox5/base
+(defpackage #:fox5/base/qt
   (:use
-   #:cl
+   #:cl+qt
+   #:fox5/base
+   #:qtools
+   #:static-vectors
    #:phoe-toolbox
-   #:alexandria)
-  (:export
-   #:image #:image-8bit #:image-32bit
-   #:width #:height #:data #:remappablep))
+   #:alexandria
+   #:cl-furcadia/constants)
+  (:export))

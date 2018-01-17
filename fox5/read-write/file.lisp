@@ -31,7 +31,7 @@ removed from the file after writing the FOX5 file.")
   (with-output-to-binary (stream pathname)
     (with-fast-output (buffer stream)
       (unwind-protect
-           (let ((*footer* (make-instance 'fox5-footer)))
+           (let ((*footer* (make-instance 'footer)))
              (ensure-compressed-images file)
              (write-command-block file buffer)
              (write-images file buffer)

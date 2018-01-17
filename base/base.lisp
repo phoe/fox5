@@ -15,7 +15,3 @@
    (%remappablep :accessor remappablep
                  :initarg :remappablep
                  :initform nil)))
-
-(defclass image-8bit (image) ())
-
-(defclass image-32bit (image) ())
