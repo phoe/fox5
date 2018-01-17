@@ -14,7 +14,6 @@
                #:qtools
                #:qtcore
                #:qtgui
-               #:fox5.base
-               #:cl-furcadia.constants)
+               #:fox5.base)
   :components ((:file "package")
                (:file "qt")))

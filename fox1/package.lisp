@@ -9,7 +9,8 @@
    #:fast-io
    #:phoe-toolbox
    #:alexandria
-   #:cl-furcadia/constants)
+   #:cl-furcadia/constants
+   #:fox5/base)
   (:export
    ;; file
    #:file #:version #:nshapes #:generator #:encryption #:shapes

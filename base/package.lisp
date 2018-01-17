@@ -7,7 +7,9 @@
   (:use
    #:cl
    #:phoe-toolbox
-   #:alexandria)
+   #:alexandria
+   #:cl-furcadia/constants)
   (:export
    #:image #:image-8bit #:image-32bit
-   #:width #:height #:data #:remappablep))
+   #:width #:height #:data #:remappablep
+   #:8bit-32bit-no-remap))

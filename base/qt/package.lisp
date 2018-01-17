@@ -10,6 +10,5 @@
    #:qtools
    #:static-vectors
    #:phoe-toolbox
-   #:alexandria
-   #:cl-furcadia/constants)
+   #:alexandria)
   (:export))

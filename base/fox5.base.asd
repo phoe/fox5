@@ -10,6 +10,7 @@
   :serial t
   :depends-on (#:alexandria
                #:phoe-toolbox
-               #:closer-mop)
+               #:closer-mop
+               #:cl-furcadia.constants)
   :components ((:file "package")
                (:file "base")))

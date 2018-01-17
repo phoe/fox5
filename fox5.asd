@@ -9,6 +9,9 @@
   :license "BSD 3-clause"
   :serial t
   :depends-on (#:fox5.fox5
-               #:fox5.fox5
+               #:fox5.fox1
+               #:fox5.base
+               #:fox5.base.qt
+               #:fox5.fsh
                #:fox5.gif-fox5)
   :components ((:file "package")))
