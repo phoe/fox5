@@ -3,7 +3,7 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; fsh.lisp
 
-(in-package #:fsh)
+(in-package #:fox5/fsh)
 
 (defclass file ()
   ((%shapes :accessor shapes

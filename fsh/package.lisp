@@ -3,10 +3,11 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; package.lisp
 
-(defpackage #:fsh
+(defpackage #:fox5/fsh
   (:use
    #:cl
    #:fast-io
    #:phoe-toolbox
    #:alexandria)
-  (:export))
+  (:export
+   #:file #:shape #:read-fsh))
