@@ -7,12 +7,10 @@
 (in-readtable :qtools)
 
 (defun display (image)
-  "Internal debugging function used for simple displaying of Furcadia images."
   (with-main-window (qlabel (q+:make-qlabel))
     (setf (q+:pixmap qlabel) (image-qpixmap image))))
 
 (defun display2 (images)
-  "Internal debugging function used for simple displaying of Furcadia images."
   (with-main-window (qlabel (q+:make-qlabel "Test"))
     (loop for image in images
           for label = (q+:make-qlabel)
@@ -20,13 +18,15 @@
              (q+:show label))))
 
 (defun display3 (images &rest color-codes)
-  "Internal debugging function used for simple displaying of Furcadia images."
   (with-main-window (main-window (make-instance 'qui:flow-layout))
     (loop for image in images
           do (loop for color-code in (cons nil color-codes)
                    for label = (q+:make-qlabel)
                    do (setf (q+:pixmap label) (image-qpixmap image color-code))
                       (qui:add-widget label main-window)))))
+
+(defun display4 (images)
+  (apply #'display3 images *sample-color-codes*))
 
 (defvar *sample-color-codes*
   '("w#'''<1)1%9###'#" "w1/?9?#,,?55?$*#" "w0#2$8(4*')'7#-#" "w223&0++*++###(#"
