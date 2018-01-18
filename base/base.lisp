@@ -11,7 +11,4 @@
    (%height :accessor height
             :initarg :height)
    (%data :accessor data
-          :initarg :data)
-   (%remappablep :accessor remappablep
-                 :initarg :remappablep
-                 :initform nil)))
+          :initarg :data)))

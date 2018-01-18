@@ -11,4 +11,4 @@
    #:cl-furcadia/constants)
   (:export
    #:image #:image-8bit #:image-32bit
-   #:width #:height #:data #:remappablep))
+   #:width #:height #:data))
