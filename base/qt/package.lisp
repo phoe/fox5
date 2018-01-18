@@ -10,5 +10,6 @@
    #:qtools
    #:static-vectors
    #:phoe-toolbox
-   #:alexandria)
+   #:alexandria
+   #:cl-furcadia/remap)
   (:export))

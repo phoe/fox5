@@ -14,6 +14,8 @@
                #:qtools
                #:qtcore
                #:qtgui
-               #:fox5.base)
+               #:fox5.base
+               #:cl-furcadia.remap
+               #:qtools-ui-flow-layout)
   :components ((:file "package")
                (:file "qt")))

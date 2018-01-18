@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; FOX5
-;;;; © Michał "phoe" Herda 2017
+;;;; © Michał "phoe" Herda
 ;;;; classes.lisp
 
 (in-package :fox5/fox1)
@@ -20,13 +20,13 @@
    (%frames :accessor frames :initform '())
    (%steps :accessor steps :initform '())))
 
-(defclass frame (fox5/base:image)
+(defclass frame (image)
   ((%position-x :accessor position-x)
    (%position-y :accessor position-y)
    (%furre-position-x :accessor furre-position-x)
    (%furre-position-y :accessor furre-position-y)))
 
-(defun read-fox1 (pathname)
+(defun read-fox1 (pathname &optional remapp)
   "Reads the provided FOX1 file from the given pathname and returns its parsed
 representation."
   (unless (pathnamep pathname) (setf pathname (pathname pathname)))
@@ -35,7 +35,7 @@ representation."
       (error "Not a FOX1 file: ~A" pathname))
     (let* ((vector (load-header stream))
            (header (parse-header vector)))
-      (parse-file stream header))))
+      (parse-file stream header remapp))))
 
 (defun validate-magic-string (stream)
   "Returns true if the file behind the provided stream is a FOX1 file, and false
@@ -74,16 +74,16 @@ otherwise."
     (read32-le buffer) ;; reserved bytes
     instance))
 
-(defun parse-file (stream file)
+(defun parse-file (stream file remapp)
   (file-position stream 28)
   (with-fast-input (buffer nil stream)
     (let* ((nshapes (nshapes file))
-           (shapes (loop repeat nshapes collect (parse-shape buffer))))
+           (shapes (loop repeat nshapes collect (parse-shape buffer remapp))))
       (setf (shapes file) shapes))
     (assert (= (file-position stream) (file-length stream)))
     file))
 
-(defun parse-shape (buffer)
+(defun parse-shape (buffer remapp)
   (let* ((shape (make-instance 'shape))
          (flags (readu16-le buffer)))
     (setf (walkablep shape) (ldb (byte 1 0) flags)
@@ -92,11 +92,12 @@ otherwise."
           (index shape) (read16-le buffer))
     (let ((nframes (readu16-le buffer))
           (nsteps (readu16-le buffer)))
-      (setf (frames shape) (loop repeat nframes collect (parse-frame buffer))
+      (setf (frames shape) (loop repeat nframes
+                                 collect (parse-frame buffer remapp))
             (steps shape) (loop repeat nsteps collect (parse-step buffer))))
     shape))
 
-(defun parse-frame (buffer)
+(defun parse-frame (buffer remapp)
   (let ((frame (make-instance 'frame)))
     (let ((image-format (ecase (readu16-le buffer)
                           (1 :8-bit) (2 :bgr) (3 :bgra) (7 :bgra-recol))))
@@ -107,10 +108,11 @@ otherwise."
           (position-x frame) (read16-le buffer)
           (position-y frame) (read16-le buffer)
           (furre-position-x frame) (read16-le buffer)
-          (furre-position-y frame) (read16-le buffer))
+          (furre-position-y frame) (read16-le buffer)
+          (remappablep frame) remapp)
     (let* ((data (make-octet-vector (readu32-le buffer))))
       (fast-read-sequence data buffer)
-      (setf (data frame) (8bit-32bit-no-remap data)))
+      (setf (data frame) (8bit-32bit data remapp)))
     frame))
 
 (defun parse-step (buffer)

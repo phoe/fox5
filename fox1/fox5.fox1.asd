@@ -14,6 +14,7 @@
                #:flexi-streams
                #:closer-mop
                #:cl-furcadia.constants
+               #:cl-furcadia.remap
                #:fox5.base)
   :components ((:file "package")
                (:file "fox1")))
