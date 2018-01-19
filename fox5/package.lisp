@@ -3,7 +3,7 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; package.lisp
 
-(defpackage #:fox5/fox5
+(defpackage #:fox5
   (:use
    #:cl
    #:fast-io

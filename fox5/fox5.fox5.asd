@@ -3,7 +3,7 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; fox5.fox5.asd
 
-(asdf:defsystem #:fox5.fox5
+(asdf:defsystem #:fox5
   :description "Library for manipulating Furcadia FOX5 files"
   :author "Michał \"phoe\" Herda <phoe@openmailbox.org>"
   :license "BSD 3-clause"
@@ -24,10 +24,9 @@
                (:file "utils")
                (:file "constants")
                ;; READ-WRITE
+               (:file "read-write/framework")
                (:file "read-write/footer")
                (:file "read-write/command-block")
                (:file "read-write/images")
-               (:file "read-write/framework")
                (:file "read-write/parsers")
-               (:file "read-write/file")
-               ))
+               (:file "read-write/file")))

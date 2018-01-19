@@ -3,7 +3,7 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; classes.lisp
 
-(in-package :fox5/fox5)
+(in-package :fox5)
 
 (defclass fox5-class ()
   ((%children :initarg :children
@@ -18,13 +18,13 @@
    (%filepath :initarg :filepath
               :accessor filepath)
    ;; fox5 slots
-   (%image-list :initarg :image-list
-                :accessor image-list)
+   (%images :initarg :images
+            :accessor images)
    (%generator :initarg :generator
                :accessor generator))
-  (:documentation #.(format nil "FOX5 file class, symbolizing a complete, ~
-parsed FOX5 file, including all images. Note that images may be loaded on ~
-demand by #'DATA to conserve resources.")))
+  (:documentation "FOX5 file class, symbolizing a complete, parsed FOX5 file,
+including all images. Note that images may be loaded on demand by #'DATA to
+conserve resources."))
 
 (defclass object (fox5-class)
   ((%id :accessor id
@@ -95,12 +95,19 @@ demand by #'DATA to conserve resources.")))
   (:documentation "FOX5 image class."))
 
 (defmethod compressed-size ((image image))
+  "Method that falls back to computing the length of COMPRESSED-DATA if the
+compressed size slot is not set."
   (if (slot-boundp image '%compressed-data)
       (length (compressed-data image))
       (slot-value image '%compressed-size)))
 
 (defmethod data ((image image))
+  "Method automatically embedding image data into FOX5 files, in case it has not
+been embedded before."
   (when (and (not (slot-boundp image '%data))
              (slot-boundp (file image) '%filepath))
     (embed-image image))
   (slot-value image '%data))
+
+(defmethod (setf data) :after (new-value (image image))
+  (slot-makunbound image '%decompressed-data))

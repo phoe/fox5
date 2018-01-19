@@ -3,7 +3,7 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; footer.lisp
 
-(in-package :fox5/fox5)
+(in-package :fox5)
 
 (defclass footer ()
   ((%compression-type :accessor compression-type

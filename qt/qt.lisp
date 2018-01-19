@@ -3,7 +3,22 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; qt.lisp
 
-(in-package :fox5/base/qt)
+(defpackage #:fox5/qt
+  (:use
+   #:cl+qt
+   #:fox5
+   #:qtools
+   #:static-vectors
+   #:phoe-toolbox
+   #:alexandria
+   #:cl-furcadia/remap)
+  (:shadowing-import-from #:fox5 #:ratio)
+  (:export
+   #:display #:display2 #:display3 #:display4
+   #:*sample-color-codes*
+   #:image-qpixmap))
+
+(in-package :fox5/qt)
 (in-readtable :qtools)
 
 (defun display (image)
