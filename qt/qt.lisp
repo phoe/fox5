@@ -52,6 +52,8 @@
                    do (setf (q+:pixmap label) (image-qpixmap image color-code))
                       (qui:add-widget label main-window)))))
 
+;;; TODO write something that utilizes REMAP-ALL
+
 (defvar *sample-color-codes*
   '("w#'''<1)1%9###'#" "w1/?9?#,,?55?$*#" "w0#2$8(4*')'7#-#" "w223&0++*++###(#"
     "w%&L=J;;;;;###'#" "w&#L&@(=(='###$#" "w88C3I58::<###'#" "w88C<I88::<##$-#"
@@ -63,7 +65,7 @@
 
 (defun image-qpixmap (image &optional color-code)
   (let* ((data (if color-code
-                   (remap (data image) color-code)
+                   (remap color-code (data image))
                    (data image)))
          (length (array-total-size data)))
     (with-static-vector (vector length :initial-contents data)
