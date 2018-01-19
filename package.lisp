@@ -3,6 +3,7 @@
 ;;;; © Michał "phoe" Herda 2017
 ;;;; package.lisp
 
+;; TODO fix this, it's so damn outdated
 (uiop:define-package #:fox5
   (:use
    #:cl
