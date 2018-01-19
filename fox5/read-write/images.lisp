@@ -22,7 +22,9 @@
             (multiplier (ecase (image-format image) (:8-bit 1) (:32-bit 4))))
         (assert (= (length decompressed)
                    (* multiplier (width image) (height image))))
-        (setf (data image) decompressed)
+        (loop for i from 0 below (length decompressed) by 4
+              do (nreversef (subseq decompressed i (+ 4 i))))
+        (setf (slot-value image '%data) decompressed)
         (finalize image (curry #'free-static-vector decompressed))))))
 
 ;;; TODO copy compressed data from original FOX5 instead of de- and
@@ -33,14 +35,18 @@
 
 (defun ensure-compressed-images (file)
   (dolist (image (images file))
-    (multiple-value-bind (compressed-block props-encoded decompressed-size)
-        (cl-lzma:lzma-compress (data image))
-      (let ((compressed-data
-              (with-fast-output (buffer)
-                (fast-write-sequence props-encoded buffer)
-                (writeu64-le decompressed-size buffer)
-                (fast-write-sequence compressed-block buffer))))
-        (setf (compressed-data image) compressed-data)))))
+    (when (not (slot-boundp image '%compressed-data))
+      (let ((data (copy-seq (data image))))
+        (loop for i from 0 below (length data) by 4
+              do (nreversef (subseq data i (+ 4 i))))
+        (multiple-value-bind (compressed-block props-encoded decompressed-size)
+            (cl-lzma:lzma-compress data)
+          (let ((compressed-data
+                  (with-fast-output (buffer)
+                    (fast-write-sequence props-encoded buffer)
+                    (writeu64-le decompressed-size buffer)
+                    (fast-write-sequence compressed-block buffer))))
+            (setf (compressed-data image) compressed-data)))))))
 
 (defun clean-compressed-images (file)
   (dolist (image (images file))

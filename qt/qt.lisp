@@ -14,7 +14,7 @@
    #:cl-furcadia/remap)
   (:shadowing-import-from #:fox5 #:ratio)
   (:export
-   #:display #:display2 #:display3 #:display4
+   #:display #:display2 #:display3 #:display4 #:display5
    #:*sample-color-codes*
    #:image-qpixmap))
 
@@ -43,6 +43,15 @@
 (defun display4 (images)
   (apply #'display3 images *sample-color-codes*))
 
+(defun display5 (images &rest color-codes)
+  (with-main-window (main-window (make-instance 'qui:flow-layout))
+    (loop for image in images
+          do (loop for color-code in color-codes
+                   for label = (q+:make-qlabel)
+                   ;; TODO optimize, right now the gradients are recalculated every time
+                   do (setf (q+:pixmap label) (image-qpixmap image color-code))
+                      (qui:add-widget label main-window)))))
+
 (defvar *sample-color-codes*
   '("w#'''<1)1%9###'#" "w1/?9?#,,?55?$*#" "w0#2$8(4*')'7#-#" "w223&0++*++###(#"
     "w%&L=J;;;;;###'#" "w&#L&@(=(='###$#" "w88C3I58::<###'#" "w88C<I88::<##$-#"
@@ -59,8 +68,10 @@
          (length (array-total-size data)))
     (with-static-vector (vector length :initial-contents data)
       (with-finalizing ((qimage (qimage-from image vector)))
-        (with-finalizing ((mirrored (q+:mirrored qimage)))
-          (q+:qpixmap-from-image mirrored))))))
+        (q+:qpixmap-from-image qimage)
+        ;; (with-finalizing ((mirrored (q+:mirrored qimage)))
+        ;;   (q+:qpixmap-from-image mirrored))
+        ))))
 
 (defun qimage-from (image vector)
   (q+:make-qimage (static-vector-pointer vector)

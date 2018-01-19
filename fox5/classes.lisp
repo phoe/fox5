@@ -110,4 +110,4 @@ been embedded before."
   (slot-value image '%data))
 
 (defmethod (setf data) :after (new-value (image image))
-  (slot-makunbound image '%decompressed-data))
+  (slot-makunbound image '%compressed-data))
