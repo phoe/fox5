@@ -14,5 +14,5 @@
                #:fox5.fox1
                #:fox5.fsh
                #:fox5.fs2
-               #:fox5.gif-fox5)
+               #:fox5.gif)
   :components ((:file "package")))

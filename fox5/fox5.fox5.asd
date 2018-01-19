@@ -17,7 +17,8 @@
                #:vecto
                #:static-vectors
                #:trivial-garbage
-               #:closer-mop)
+               #:closer-mop
+               #:cl-furcadia.ws)
   :components ((:file "package")
                (:file "classes")
                (:file "utils")

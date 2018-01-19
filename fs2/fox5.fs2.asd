@@ -16,4 +16,4 @@
                #:cl-furcadia.remap
                #:fox5.base)
   :components ((:file "package")
-               (:file "fsh2")))
+               (:file "fs2")))

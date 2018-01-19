@@ -11,7 +11,8 @@
    #:alexandria
    #:cl-lzma
    #:static-vectors
-   #:trivial-garbage)
+   #:trivial-garbage
+   #:cl-furcadia/ws)
   (:shadow #:ratio)
   (:export
    ;; classes

@@ -1,9 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; FOX5
 ;;;; © Michał "phoe" Herda 2017
-;;;; gif-fox5.lisp
+;;;; gif.lisp
 
-(defpackage #:fox5/gif-fox5
+(defpackage #:fox5/gif
   (:use
    #:cl
    #:alexandria
@@ -17,7 +17,7 @@
    #:gif-fox5
    #:validate-gif))
 
-(in-package :fox5/gif-fox5)
+(in-package :fox5/gif)
 
 ;;; TODO add ability to convert non-portrait GIFs
 ;;; TODO add modifiable conversion types
