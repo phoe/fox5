@@ -68,7 +68,7 @@ different than 95px will not display correctly." height))
 (defun gif-make-file (images kitterspeak &optional remappingp)
   (let ((file (make-instance 'file
                              :generator `(:third-party ,*fox5-generator-number*)
-                             :image-list images)))
+                             :images images)))
     (push (gif-make-object images kitterspeak remappingp) (children file))
     file))
 

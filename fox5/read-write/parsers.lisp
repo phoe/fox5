@@ -40,7 +40,7 @@ requires a slightly different technique."
     (writeu8-be position buffer)
     (writeu32-be 1 buffer)
     (mapc (lambda (x) (write-command object x buffer))
-          '(%image-list %generator))))
+          '(%images %generator))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Generic commands
@@ -95,13 +95,13 @@ requires a slightly different technique."
                                  :format (ecase (readu8-be buffer)
                                            (0 :8-bit) (1 :32-bit)))))
     (let ((n (readu32-be buffer)))
-      (setf (image-list *current-object*)
+      (setf (images *current-object*)
             (loop repeat n collect (parse-image buffer))))))
 
-(define-fox5-writer (file image-list buffer)
+(define-fox5-writer (file images buffer)
   (writeu8-be #x53 buffer)
-  (writeu32-be (length image-list) buffer)
-  (loop for image in image-list
+  (writeu32-be (length images) buffer)
+  (loop for image in images
         do (with-accessors ((compressed-size compressed-size) (width width)
                             (height height) (format image-format))
                image

@@ -20,7 +20,7 @@
    ;; accessors - generic
    #:children
    ;; accessors - file
-   #:footer #:filepath #:image-list #:generator
+   #:footer #:filepath #:images #:generator
    ;; accessors - object
    #:id #:name #:description #:authors #:revisions #:keywords #:license
    #:portal #:edit-type #:flags #:more-flags #:fx-filter

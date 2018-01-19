@@ -12,7 +12,7 @@
   (let* ((file (file image))
          (footer (footer file))
          (command-block-size (compressed-size footer))
-         (images (image-list file))
+         (images (images file))
          (images-before (subseq images 0 (position image images)))
          (compressed-sizes (reduce #'+ images-before :key #'compressed-size))
          (total-size (+ command-block-size compressed-sizes)))
@@ -28,11 +28,11 @@
 ;;; TODO copy compressed data from original FOX5 instead of de- and
 ;;; recompressing them
 (defun write-images (file buffer)
-  (dolist (image (image-list file))
+  (dolist (image (images file))
     (fast-write-sequence (compressed-data image) buffer)))
 
 (defun ensure-compressed-images (file)
-  (dolist (image (image-list file))
+  (dolist (image (images file))
     (multiple-value-bind (compressed-block props-encoded decompressed-size)
         (cl-lzma:lzma-compress (data image))
       (let ((compressed-data
@@ -43,7 +43,7 @@
         (setf (compressed-data image) compressed-data)))))
 
 (defun clean-compressed-images (file)
-  (dolist (image (image-list file))
+  (dolist (image (images file))
     (slot-makunbound image '%compressed-size)
     (slot-makunbound image '%compressed-data)))
 

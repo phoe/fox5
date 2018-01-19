@@ -19,7 +19,7 @@ parsed FOX5 file object.")
       (setf (filepath file) pathname
             (footer file) footer)
       (when embed-images-p
-        (mapc #'embed-image (image-list file)))
+        (mapc #'embed-image (images file)))
       file)))
 
 (defun write-fox5 (file pathname &optional preserve-compressed-p)
