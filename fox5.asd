@@ -18,11 +18,12 @@
                #:static-vectors
                #:trivial-garbage
                #:closer-mop
-               #:cl-furcadia.ws)
+               #:cl-furcadia.ws
+               #:cl-furcadia.remap)
   :components ((:file "fox5/package")
-               (:file "fox5/classes")
                (:file "fox5/utils")
                (:file "fox5/constants")
+               (:file "fox5/classes")
                (:file "fox5/read-write/framework")
                (:file "fox5/read-write/footer")
                (:file "fox5/read-write/command-block")
@@ -46,20 +47,18 @@
                #:cl-furcadia.remap)
   :components ((:file "qt/qt")))
 
-;; (asdf:defsystem #:fox5/qt
-;;   :description "Display FOX5 files with Qtools (for development)"
-;;   :author "Michał \"phoe\" Herda <phoe@openmailbox.org>"
-;;   :license "BSD 3-clause"
-;;   :serial t
-;;   :components ((:file "qt/qt")))
-
-;; (asdf:defsystem #:fox5/converters
-;;   :description "Library for converting Furcadia FSH/FS2/FOX1 files into FOX5"
-;;   :author "Michał \"phoe\" Herda <phoe@openmailbox.org>"
-;;   :license "BSD 3-clause"
-;;   :serial t
-;;   :depends-on (#:fox5)
-;;   :components ((:file "fsh/fsh")
-;;                (:file "fs2/fs2")
-;;                (:file "fox1/fox1")
-;;                (:file "gif/gif")))
+(asdf:defsystem #:fox5/converters
+  :description "Library for converting Furcadia FSH/FS2/FOX1 files into FOX5"
+  :author "Michał \"phoe\" Herda <phoe@openmailbox.org>"
+  :license "BSD 3-clause"
+  :serial t
+  :depends-on (#:fox5)
+  :components ((:file "format/fsh-fs2")
+               (:file "format/fox1")
+               (:file "format/gif")
+               (:file "edit-type/avatar")
+               (:file "edit-type/portrait")
+               (:file "edit-type/item")
+               (:file "edit-type/wall")
+               (:file "edit-type/floor")
+               (:file "edit-type/effect")))

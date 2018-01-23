@@ -12,7 +12,9 @@
    #:cl-lzma
    #:static-vectors
    #:trivial-garbage
-   #:cl-furcadia/ws)
+   #:cl-furcadia/ws
+   #:cl-furcadia/remap
+   #:cl-furcadia/constants)
   (:shadow #:ratio)
   (:export
    ;; classes

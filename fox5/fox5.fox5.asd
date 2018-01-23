@@ -18,7 +18,8 @@
                #:static-vectors
                #:trivial-garbage
                #:closer-mop
-               #:cl-furcadia.ws)
+               #:cl-furcadia.ws
+               #:cl-furcadia.constants)
   :components ((:file "package")
                (:file "classes")
                (:file "utils")

@@ -251,7 +251,7 @@ requires a slightly different technique."
 (define-fox5-writer (object id buffer)
   (writeu8-be #x69 buffer)
   (let ((byte (if (eq id :default) -1 id)))
-    (writeu32-be byte buffer)))
+    (write32-be byte buffer)))
 
 ;;; Object > Edit Type
 (defparameter *fox5-object-edit-type*
@@ -357,7 +357,8 @@ requires a slightly different technique."
 (define-fox5-reader (#x4B buffer 'shape)
   (setf (kitterspeak *current-object*)
         (loop repeat (readu16-be buffer)
-              collect (list (readu16-be buffer)
+              collect (list (assoc-value-or-die *kitterspeak*
+                                                (readu16-be buffer))
                             (read16-be buffer)
                             (read16-be buffer)))))
 
@@ -365,7 +366,7 @@ requires a slightly different technique."
   (writeu8-be #x4B buffer)
   (writeu16-be (length kitterspeak) buffer)
   (loop for (i j k) in kitterspeak
-        do (writeu16-be i buffer)
+        do (writeu16-be (rassoc-value-or-die *kitterspeak* i) buffer)
            (write16-be j buffer)
            (write16-be k buffer)))
 

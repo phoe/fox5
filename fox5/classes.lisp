@@ -8,7 +8,7 @@
 (defclass fox5-class ()
   ((%children :initarg :children
               :accessor children
-              :initform nil))
+              :initform '()))
   (:documentation "Mixin for all FOX5 classes."))
 
 (defclass file (fox5-class)
@@ -19,9 +19,11 @@
               :accessor filepath)
    ;; fox5 slots
    (%images :initarg :images
-            :accessor images)
+            :accessor images
+            :initform '())
    (%generator :initarg :generator
-               :accessor generator))
+               :accessor generator
+               :initform '#.(list :third-party *fox5-generator-number*)))
   (:documentation "FOX5 file class, symbolizing a complete, parsed FOX5 file,
 including all images. Note that images may be loaded on demand by #'DATA to
 conserve resources."))
@@ -41,7 +43,8 @@ conserve resources."))
    (%edit-type :initarg :edit-type
                :accessor edit-type)
    (%flags :initarg :flags
-           :accessor flags)
+           :accessor flags
+           :initform '())
    (%more-flags :accessor more-flags) ;; TODO parse this
    (%fx-filter :accessor fx-filter))
   (:documentation "FOX5 object class."))
