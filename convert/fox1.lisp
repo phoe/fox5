@@ -5,7 +5,9 @@
 
 (in-package :fox5)
 
-(defun read-fox1 (pathname &optional remapp)
+(export 'read-fox1 :fox5)
+
+(defun read-fox1 (pathname &key remapp)
   "Reads the provided FOX1 file from the given pathname and returns its parsed
 representation converted to a FOX5 file. The key argument REMAPP controls if
 the file is meant to be remappable."

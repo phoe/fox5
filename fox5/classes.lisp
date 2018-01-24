@@ -91,8 +91,6 @@ conserve resources."))
            :initarg :width)
    (%height :accessor height
             :initarg :height)
-   (%format :accessor image-format
-            :initarg :format)
    (%data :writer (setf data)
           :initarg :data))
   (:documentation "FOX5 image class."))

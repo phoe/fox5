@@ -52,13 +52,9 @@
   :author "Michał \"phoe\" Herda <phoe@openmailbox.org>"
   :license "BSD 3-clause"
   :serial t
-  :depends-on (#:fox5)
-  :components ((:file "format/fsh-fs2")
-               (:file "format/fox1")
-               (:file "format/gif")
-               (:file "edit-type/avatar")
-               (:file "edit-type/portrait")
-               (:file "edit-type/item")
-               (:file "edit-type/wall")
-               (:file "edit-type/floor")
-               (:file "edit-type/effect")))
+  :depends-on (#:fox5
+               #:skippy-renderer)
+  :components ((:file "convert/fsh-fs2")
+               (:file "convert/fox1")
+               (:file "convert/gif")
+               (:file "convert/types")))

@@ -4,7 +4,6 @@
 ;;;; fsh.lisp
 
 (in-package #:fox5)
-;; TODO new package for these(?)
 
 (export 'read-fsh :fox5)
 (export 'read-fs2 :fox5)
@@ -99,27 +98,3 @@ the file is meant to be remappable."
             do (rotatef (subseq v start1 end1)
                         (subseq v start2 end2)))
       (8bit-32bit v remapp))))
-
-#|
-### Legacy:
-Seated SW
-Traveling right foot forward SW
-Standing SW
-Traveling left foot forward SW
-Seated SE
-Traveling right foot forward SE
-Standing SE
-Traveling left foot forward SE
-Seated NW
-Traveling right foot forward NW
-Standing NW
-Traveling left foot forward NW
-Seated NE
-Traveling right foot forward NE
-Standing NE
-Traveling left foot forward NE
-Lying SW
-Lying SE
-Lying NE
-Lying NW
-|#

@@ -91,9 +91,7 @@ requires a slightly different technique."
            (make-instance 'image :file *current-object*
                                  :compressed-size (readu32-be buffer)
                                  :width (readu16-be buffer)
-                                 :height (readu16-be buffer)
-                                 :format (ecase (readu8-be buffer)
-                                           (0 :8-bit) (1 :32-bit)))))
+                                 :height (readu16-be buffer))))
     (let ((n (readu32-be buffer)))
       (setf (images *current-object*)
             (loop repeat n collect (parse-image buffer))))))
@@ -103,13 +101,12 @@ requires a slightly different technique."
   (writeu32-be (length images) buffer)
   (loop for image in images
         do (with-accessors ((compressed-size compressed-size) (width width)
-                            (height height) (format image-format))
+                            (height height))
                image
              (writeu32-be compressed-size buffer)
              (writeu16-be width buffer)
              (writeu16-be height buffer)
-             (writeu8-be (ecase format (:8-bit 0) (:32-bit 1))
-                         buffer))))
+             (writeu8-be 1 buffer))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Object commands
