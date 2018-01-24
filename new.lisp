@@ -5,9 +5,28 @@
 
 (in-package :fox5)
 
-(defmacro define-shape-type ((&rest shape-types) &body body)
-  (declare (ignore shape-types body))
-  (error "DEFINE-SHAPE-TYPE not implemented yet."))
+;; TODO exports
+
+;; TODO objects -//- EDIT-TYPE
+(defgeneric shape-type (object shape)
+  ;; TODO description here, this needs to be protocolized
+  (:method ((object object) (shape shape))
+    (%shape-type object shape (edit-type object))))
+
+(defgeneric %shape-type (object shape edit-type))
+
+(defmacro define-shape-type ((&rest edit-types) &body body)
+  ;; TODO description here, this needs to be protocolized
+  `(progn ,@(mapcar (lambda (x) `(%define-shape-type ,x ,@body)) edit-types)))
+
+(defmacro %define-shape-type (edit-type &body body)
+  (with-gensyms (object shape)
+    `(defmethod %shape-type
+         ((,object object) (,shape shape) (edit-type (eql ,edit-type)))
+       (with-accessors ((purpose purpose) (state state) (direction direction)
+                        (num numerator) (den denominator))
+           ,shape
+         ,@body))))
 
 ;; TODO when defining writer, use SLOT-DEFINITION-INITFORM to check if the set
 ;; value matches the default - in this case, SLOT-MAKUNBOUND the slot just to be
@@ -56,5 +75,3 @@
 
 (define-shape-type (:button :ds-button)
   `(,edit-type ,(case state (0 :normal) (1 :clicked) (2 :hover) (4 :toggled))))
-
-;; edit-type purpose state direction num den
