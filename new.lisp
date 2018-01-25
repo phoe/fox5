@@ -6,7 +6,7 @@
 (in-package :fox5)
 
 ;; TODO exports
-
+;; TODO make objects point to their parents so shapes can print their SHAPE-TYPE
 ;; TODO objects -//- EDIT-TYPE
 (defgeneric shape-type (object shape)
   ;; TODO description here, this needs to be protocolized
@@ -22,7 +22,7 @@
 (defmacro %define-shape-type (edit-type &body body)
   (with-gensyms (object shape)
     `(defmethod %shape-type
-         ((,object object) (,shape shape) (edit-type (eql ,edit-type)))
+         ((,object object) (,shape shape) (edit-type (eql ',edit-type)))
        (with-accessors ((purpose purpose) (state state) (direction direction)
                         (num numerator) (den denominator))
            ,shape
