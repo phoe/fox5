@@ -167,7 +167,7 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
           (:menu-icon
            `(,(ecase num (1 :tiny) (2 :small) (3 :large) (4 :showcase))))
           ((:butler :portrait :specitag)
-           `(,(ecase state (1 :female) (2 :male) (4 :unspecified))))
+           `(,(ecase state (0 nil) (1 :female) (2 :male) (4 :unspecified))))
           (:avatar
            `(,direction
              ,(ecase (ldb (byte 4 0) state)
@@ -182,11 +182,12 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
                             (:tiny 1) (:small 2) (:large 3) (:showcase 4))))
     ((:butler :portrait :specitag)
      (setf state (ecase (second new-value)
-                   (:female 1) (:male 2) (:unspecified 4))))
+                   ((nil) 0) (:female 1) (:male 2) (:unspecified 4))))
     (:avatar
      (setf direction (second new-value))
      (setf (ldb (byte 4 0) state)
-           (ecase (third new-value) (:female 1) (:male 2) (:unspecified 4)))
+           (ecase (third new-value)
+             ((nil) 0) (:female 1) (:male 2) (:unspecified 4)))
      (setf num (ecase (fourth new-value) (:small 1) (:large 2)))
      (setf den 1)
      (setf (ldb (byte 4 4) state)
@@ -254,7 +255,7 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
       (dolist (j '(:female :male :unspecified))
         (collect (list :avatar i j))))
     (dolist (i '(:nw :ne :sw :se))
-      (dolist (j '(:female :male :unspecified))
+      (dolist (j '(nil :female :male :unspecified))
         (dolist (k '(:small :large))
           (dolist (l '(:walk-right :lie :walk :sit :walk-left))
             (collect (list :avatar :avatar i j k l))))))
