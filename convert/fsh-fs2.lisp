@@ -27,7 +27,6 @@ the file is meant to be remappable."
               for width = (readu8 buffer)
               for height = (readu8 buffer)
               do (setf
-                  (image-format image) :32-bit
                   (generator file) (list :third-party *fox5-generator-number*)
                   (width image) width
                   (height image) height
@@ -37,10 +36,10 @@ the file is meant to be remappable."
                   (data image) (%read-fsh-image buffer width height remapp)
                   (purpose sprite) (if remapp :remapping-data nil))
                  (push image (images file))
-                 (push object (children file))
-                 (push shape (children object))
-                 (push frame (children shape))
-                 (push sprite (children frame))
+                 (parent-push file object)
+                 (parent-push object shape)
+                 (parent-push shape frame)
+                 (parent-push frame sprite)
               finally (nreversef (images file))
                       (nreversef (children file))
                       (return file))))))
@@ -67,7 +66,6 @@ the file is meant to be remappable."
               for width = (readu8 buffer)
               for height = (readu8 buffer)
               do (setf
-                  (image-format image) :32-bit
                   (width image) width
                   (height image) height
                   (frame-offset frame)
@@ -76,10 +74,10 @@ the file is meant to be remappable."
                   (image-id sprite) i
                   (data image) (%read-fsh-image buffer width height remapp))
                  (push image (images file))
-                 (push object (children file))
-                 (push shape (children object))
-                 (push frame (children shape))
-                 (push sprite (children frame))
+                 (parent-push file object)
+                 (parent-push object shape)
+                 (parent-push shape frame)
+                 (parent-push frame sprite)
               finally (nreversef (images file))
                       (nreversef (children file))
                       (return file))))))

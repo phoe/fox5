@@ -18,10 +18,9 @@
          (total-size (+ command-block-size compressed-sizes)))
     (with-input-from-binary (stream (filepath file))
       (file-position stream total-size)
-      (let ((decompressed (decompress-from-stream stream))
-            (multiplier (ecase (image-format image) (:8-bit 1) (:32-bit 4))))
+      (let ((decompressed (decompress-from-stream stream)))
         (assert (= (length decompressed)
-                   (* multiplier (width image) (height image))))
+                   (* 4 (width image) (height image))))
         (loop for i from 0 below (length decompressed) by 4
               do (nreversef (subseq decompressed i (+ 4 i))))
         (setf (slot-value image '%data) decompressed)

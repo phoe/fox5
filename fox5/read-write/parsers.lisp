@@ -29,11 +29,13 @@ create an :AFTER method that:
     (mapc (rcurry #'write-fox5-to-buffer buffer) children))
   (writeu8-be #x3C buffer))
 
+;;; TODO magic that checks values against default initforms and does NOT write
+;;; the value if it's equal to the default
+
 (defmethod write-fox5-to-buffer ((object file) buffer)
   "This method initializes the file writing, since writing the file object
 requires a slightly different technique."
-  (dotimes (i 4)
-    (writeu8-be #x00 buffer))
+  (writeu32-be #x00 buffer)
   (writeu8-be #x4C buffer)
   (let* ((class-name (class-name (class-of object)))
          (position (position class-name *fox5-list-levels*)))
@@ -59,10 +61,10 @@ requires a slightly different technique."
                  for command = (code-char (readu8-be buffer))
                  if (eql command (code-char #x3C))
                    do (incf i)
+                      (setf (parent *current-object*) *parent-object*)
                       (unless *parent-object* (return *current-object*))
                       (push *current-object* (children *parent-object*))
                       (setf *current-object* (make-instance class))
-                      (setf (parent *current-object*) *parent-object*)
                       (when (= i count) (return))
                  else do (read-command command buffer))
       (setf (children *current-object*)
@@ -93,7 +95,8 @@ requires a slightly different technique."
                                         :compressed-size (readu32-be buffer)
                                         :width (readu16-be buffer)
                                         :height (readu16-be buffer))
-             (readu8-be buffer))))
+             ;; TODO make this work with 8-bit images
+             (assert (= 1 (readu8-be buffer))))))
     (let ((n (readu32-be buffer)))
       (setf (images *current-object*)
             (loop repeat n collect (parse-image buffer))))))

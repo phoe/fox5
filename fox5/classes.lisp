@@ -26,61 +26,80 @@
             :initform '())
    (%generator :initarg :generator
                :accessor generator
-               :initform '#.(list :third-party *fox5-generator-number*)))
+               :initform (list :third-party *fox5-generator-number*)))
   (:documentation "FOX5 file class, symbolizing a complete, parsed FOX5 file,
 including all images. Note that images may be loaded on demand by #'DATA to
 conserve resources."))
 
 (defclass object (fox5-class)
   ((%id :accessor id
-        :initarg :id)
+        :initarg :id
+        :initform -1)
    (%name :accessor name
-          :initarg :name)
-   (%description :accessor description)
+          :initarg :name
+          :initform "")
+   (%description :accessor description
+                 :initform "")
    (%authors :initarg :authors
-             :accessor authors)
-   (%revisions :accessor revisions)
-   (%keywords :accessor keywords)
-   (%license :accessor license)
-   (%portal :accessor portal)
+             :accessor authors
+             :initform '())
+   (%revisions :accessor revisions
+               :initform 0)
+   (%keywords :accessor keywords
+              :initform '())
+   (%license :accessor license
+             :initform 0)
+   (%portal :accessor portal
+            :initform "")
    (%edit-type :initarg :edit-type
-               :accessor edit-type)
+               :accessor edit-type
+               :initform nil)
    (%flags :initarg :flags
            :accessor flags
            :initform '())
-   (%more-flags :accessor more-flags) ;; TODO parse this
-   (%fx-filter :accessor fx-filter))
+   (%more-flags :accessor more-flags
+                :initform 0) ;; TODO parse and print this in PRINT-OBJECT OBJECT
+   (%fx-filter :accessor fx-filter
+               :initform (list :target-layer :vb :blend-mode nil)))
   (:documentation "FOX5 object class."))
 
 (defclass shape (fox5-class)
   ((%purpose :initarg :purpose
-             :accessor purpose)
+             :accessor purpose
+             :initform 0)
    (%direction :initarg :direction
-               :accessor direction)
+               :accessor direction
+               :initform 0)
    (%state :initarg :state
-           :accessor state)
+           :accessor state
+           :initform 0)
    (%ratio :initarg :ratio
-           :accessor ratio)
+           :accessor ratio
+           :initform '(0 0))
    (%kitterspeak :initarg :kitterspeak
-                 :accessor kitterspeak))
+                 :accessor kitterspeak
+                 :initform '()))
   (:documentation "FOX5 shape class."))
 
 (defclass frame (fox5-class)
   ((%frame-offset :initarg :frame-offset
                   :accessor frame-offset
-                  :initform '(:x 0 :y 0))
+                  :initform (list :x 0 :y 0))
    (%furre-offset :initarg :furre-offset
                   :accessor furre-offset
-                  :initform '(:x 0 :y 0)))
+                  :initform (list :x 0 :y 0)))
   (:documentation "FOX5 frame class."))
 
 (defclass sprite (fox5-class)
   ((%purpose :initarg :purpose
-             :accessor purpose)
+             :accessor purpose
+             :initform 0)
    (%image-id :initarg :image-id
-              :accessor image-id)
+              :accessor image-id
+              :initform nil)
    (%offset :initarg :offset
-            :accessor offset))
+            :accessor offset
+            :initform (list :x 0 :y 0)))
   (:documentation "FOX5 sprite class."))
 
 (defclass image (fox5-class)

@@ -35,9 +35,9 @@
         for i from 1
         for frame = (make-instance 'frame)
         for sprite = (make-instance 'sprite :image-id i :purpose purpose)
-        do (push frame (children shape))
-           (push sprite (children frame))
+        do (parent-push shape frame)
+           (parent-push frame sprite)
         finally (nreversef (children shape))
-                (push shape (children object))
-                (push object (children file))
+                (parent-push object shape)
+                (parent-push file object)
                 (return file)))

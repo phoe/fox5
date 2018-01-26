@@ -52,6 +52,7 @@ the file is meant to be remappable."
                   for (frame image) = (%fox1-parse-frame buffer remapp)
                   collect frame into frames
                   collect image into images
+                  do (setf (parent frame) shape)
                   finally (return (list frames images)))
         for steps = (loop repeat nsteps
                           collect (list (assoc-value-or-die *kitterspeak*
@@ -64,8 +65,8 @@ the file is meant to be remappable."
         do (when walkablep (push :walkable (flags object)))
            (when gettablep (push :gettable (flags object)))
            (when sittablep (push :sittable (flags object)))
-           (push shape (children object))
-           (push object (children file))
+           (parent-push object shape)
+           (parent-push file object)
            (nconcf (images file) images)
            (setf (id object) id
                  (children shape) frames
@@ -88,10 +89,9 @@ the file is meant to be remappable."
           (list :x (read16-le buffer) :y (read16-le buffer))
           (furre-offset frame)
           (list :x (read16-le buffer) :y (read16-le buffer))
-          (image-id sprite) (incf *image-id*)
+          (image-id sprite) (incf %*fox1-image-id*)
           (purpose sprite) (if remapp :remapping-data nil))
     (readu32-le buffer)
-    (setf (data image) (%read-fsh-image buffer width height remapp)
-          (image-format image) :32-bit)
-    (push sprite (children frame))
+    (setf (data image) (%read-fsh-image buffer width height remapp))
+    (parent-push frame sprite)
     (list frame image)))

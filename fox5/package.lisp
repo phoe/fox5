@@ -36,5 +36,7 @@
    #:file #:compressed-size #:compressed-data #:width #:height #:data
    ;; constants
    #:*fox5-footer-magic-string* #:*fox5-list-levels* #:*fox5-generator-number*
+   ;; shape types
+   #:shape-type #:*shape-types*
    ;; read/write
    #:read-fox5 #:write-fox5))

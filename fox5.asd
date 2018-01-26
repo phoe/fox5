@@ -24,6 +24,7 @@
                (:file "fox5/utils")
                (:file "fox5/constants")
                (:file "fox5/classes")
+               (:file "fox5/shape-types")
                (:file "fox5/read-write/framework")
                (:file "fox5/read-write/footer")
                (:file "fox5/read-write/command-block")
@@ -47,14 +48,15 @@
                #:cl-furcadia.remap)
   :components ((:file "qt/qt")))
 
-(asdf:defsystem #:fox5/converters
+(asdf:defsystem #:fox5/convert
   :description "Library for converting Furcadia FSH/FS2/FOX1 files into FOX5"
   :author "Michał \"phoe\" Herda <phoe@openmailbox.org>"
   :license "BSD 3-clause"
   :serial t
   :depends-on (#:fox5
                #:skippy-renderer)
-  :components ((:file "convert/fsh-fs2")
+  :components ((:file "convert/utils")
+               (:file "convert/fsh-fs2")
                (:file "convert/fox1")
                (:file "convert/gif")
                (:file "convert/types")))
