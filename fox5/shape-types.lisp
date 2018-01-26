@@ -184,13 +184,12 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
      (setf state (ecase (second new-value)
                    (:female 1) (:male 2) (:unspecified 4))))
     (:avatar
-     (setf direction (second new-value)
-           (ldb (byte 4 0) state)
-           (ecase (third new-value) (:female 1) (:male 2) (:unspecified 4))
-           num (ecase (fourth new-value)
-                 (:small 1) (:large 2))
-           den 1
-           (ldb (byte 4 4) state)
+     (setf direction (second new-value))
+     (setf (ldb (byte 4 0) state)
+           (ecase (third new-value) (:female 1) (:male 2) (:unspecified 4)))
+     (setf num (ecase (fourth new-value) (:small 1) (:large 2)))
+     (setf den 1)
+     (setf (ldb (byte 4 4) state)
            (ecase (fifth new-value)
              (:walk-right 1) (:lie 2) (:walk 3) (:sit 4) (:walk-left 5))))))
 
