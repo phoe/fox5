@@ -8,7 +8,11 @@
 ;; TODO exports
 ;; TODO make objects point to their parents so shapes can print their SHAPE-TYPE
 ;; TODO objects -//- EDIT-TYPE
+
+;; TODO describe somewhere what shape type is
+
 (defgeneric shape-type (object shape)
+  "Returns the shape type of the provided shape."
   ;; TODO description here, this needs to be protocolized
   (:method ((object object) (shape shape))
     (%shape-type object shape (edit-type object))))

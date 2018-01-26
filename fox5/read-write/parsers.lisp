@@ -62,6 +62,7 @@ requires a slightly different technique."
                       (unless *parent-object* (return *current-object*))
                       (push *current-object* (children *parent-object*))
                       (setf *current-object* (make-instance class))
+                      (setf (parent *current-object*) *parent-object*)
                       (when (= i count) (return))
                  else do (read-command command buffer))
       (setf (children *current-object*)

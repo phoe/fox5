@@ -8,7 +8,10 @@
 (defclass fox5-class ()
   ((%children :initarg :children
               :accessor children
-              :initform '()))
+              :initform '())
+   (%parent :initarg :parent
+            :accessor parent
+            :initform nil))
   (:documentation "Mixin for all FOX5 classes."))
 
 (defclass file (fox5-class)
