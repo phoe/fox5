@@ -89,10 +89,11 @@ requires a slightly different technique."
 ;;; File > Images
 (define-fox5-reader (#x53 buffer 'file)
   (flet ((parse-image (buffer)
-           (make-instance 'image :file *current-object*
-                                 :compressed-size (readu32-be buffer)
-                                 :width (readu16-be buffer)
-                                 :height (readu16-be buffer))))
+           (prog1 (make-instance 'image :file *current-object*
+                                        :compressed-size (readu32-be buffer)
+                                        :width (readu16-be buffer)
+                                        :height (readu16-be buffer))
+             (readu8-be buffer))))
     (let ((n (readu32-be buffer)))
       (setf (images *current-object*)
             (loop repeat n collect (parse-image buffer))))))
