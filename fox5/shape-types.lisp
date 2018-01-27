@@ -153,11 +153,11 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
 ;;; PORTRAIT-SET
 
 (define-shape-type-get (:portrait-set)
-  `(,(ecase state (1 :female) (2 :male) (4 :unspecified))))
+  `(:portrait ,(ecase state (1 :female) (2 :male) (4 :unspecified))))
 
 (define-shape-type-set (:portrait-set)
-  (setf state (ecase (first new-value)
-                (:female 1) (:male 2) (:unspecified 4))))
+  (setf state (ecase (second new-value) (:female 1) (:male 2) (:unspecified 4))
+        num 1 den 1))
 
 ;;; AVATAR GENDERED-AVATAR
 
@@ -169,9 +169,9 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
           ((:butler :portrait :specitag)
            `(,(ecase state (0 nil) (1 :female) (2 :male) (4 :unspecified))))
           (:avatar
-           `(,direction
-             ,(ecase (ldb (byte 4 0) state)
+           `(,(ecase (ldb (byte 4 0) state)
                 (0 nil) (1 :female) (2 :male) (4 :unspecified))
+             ,direction
              ,(case num (1 :small) (2 :large) (t num))
              ,(ecase (ldb (byte 4 4) state)
                 (1 :walk-right) (2 :lie) (3 :walk) (4 :sit) (5 :walk-left)))))))
@@ -184,10 +184,10 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
      (setf state (ecase (second new-value)
                    ((nil) 0) (:female 1) (:male 2) (:unspecified 4))))
     (:avatar
-     (setf direction (second new-value))
      (setf (ldb (byte 4 0) state)
-           (ecase (third new-value)
+           (ecase (second new-value)
              ((nil) 0) (:female 1) (:male 2) (:unspecified 4)))
+     (setf direction (third new-value))
      (setf num (ecase (fourth new-value) (:small 1) (:large 2)))
      (setf den 1)
      (setf (ldb (byte 4 4) state)
@@ -197,10 +197,10 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
 ;;; BUTTON DS-BUTTON
 
 (define-shape-type-get (:button :ds-button)
-  `(,(ecase state (0 :normal) (1 :clicked) (2 :hover) (4 :toggled))))
+  `(,edit-type ,(ecase state (0 :normal) (1 :clicked) (2 :hover) (4 :toggled))))
 
 (define-shape-type-set (:button :ds-button)
-  (setf state (ecase (first new-value)
+  (setf state (ecase (second new-value)
                 (:normal 0) (:clicked 1) (:hover 2) (:toggled 4))))
 
 ;;; Unit tests
@@ -224,7 +224,7 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
       (error ()))
     (values)))
 
-(defvar *shape-types*
+(defparameter *shape-types*
   (uiop:while-collecting (collect)
     ;; FLOOR ITEM EFFECT REGION LIGHTING AMBIENCE
     (dolist (i '(:floor :item :effect :region :lighting :ambience))
@@ -247,20 +247,20 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
         (collect (list :portal :portal j i))))
     ;; PORTRAIT SET
     (dolist (i '(:female :male :unspecified))
-      (collect (list :portrait-set i)))
+      (collect (list :portrait-set :portrait i)))
     ;; AVATAR GENDERED-AVATAR
     (dolist (i '(:tiny :small :large :showcase))
       (collect (list :avatar :menu-icon i)))
     (dolist (i '(:butler :portrait :specitag))
       (dolist (j '(:female :male :unspecified))
         (collect (list :avatar i j))))
-    (dolist (i '(:nw :ne :sw :se))
-      (dolist (j '(nil :female :male :unspecified))
+    (dolist (i '(nil :female :male :unspecified))
+      (dolist (j '(:nw :ne :sw :se))
         (dolist (k '(:small :large))
           (dolist (l '(:walk-right :lie :walk :sit :walk-left))
             (collect (list :avatar :avatar i j k l))))))
     ;; BUTTON DS-BUTTON
     (dolist (i '(:button :ds-button))
       (dolist (j '(:normal :clicked :hover :toggled))
-        (collect (list i j)))))
+        (collect (list i i j)))))
   "A list of all shape types legal in FOX5.")

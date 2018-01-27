@@ -48,7 +48,7 @@ conserve resources."))
    (%keywords :accessor keywords
               :initform '())
    (%license :accessor license
-             :initform 0)
+             :initform :fc-by-sa)
    (%portal :accessor portal
             :initform "")
    (%edit-type :initarg :edit-type
@@ -66,10 +66,10 @@ conserve resources."))
 (defclass shape (fox5-class)
   ((%purpose :initarg :purpose
              :accessor purpose
-             :initform 0)
+             :initform nil)
    (%direction :initarg :direction
                :accessor direction
-               :initform 0)
+               :initform nil)
    (%state :initarg :state
            :accessor state
            :initform 0)

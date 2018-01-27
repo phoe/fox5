@@ -119,11 +119,11 @@ requires a slightly different technique."
 ;;; Object > Revisions
 (define-fox5-reader (#x72 buffer 'object)
   (setf (revisions *current-object*)
-        (readu8-be buffer)))
+        (readu16-be buffer)))
 
 (define-fox5-writer (object revisions buffer)
   (writeu8-be #x72 buffer)
-  (writeu8-be revisions buffer))
+  (writeu16-be revisions buffer))
 
 ;;; Object > Authors
 (define-fox5-reader (#x61 buffer 'object)
@@ -298,7 +298,7 @@ requires a slightly different technique."
 ;;; Shape > Purpose
 (defparameter *fox5-shape-purpose*
   '((0 . nil)
-    (1 . :menu-icon) (2 . :ui-button) (3 . :butler) (4 . :portrait)
+    (1 . :menu-icon) (2 . :button) (3 . :butler) (4 . :portrait)
     (5 . :ds-button)
     (11 . :avatar) (12 . :attachment)
     (21 . :floor) (22 . :item) (23 . :wall) (24 . :region) (25 . :effect)

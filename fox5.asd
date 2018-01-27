@@ -59,4 +59,4 @@
                (:file "convert/fsh-fs2")
                (:file "convert/fox1")
                (:file "convert/gif")
-               (:file "convert/types")))
+               (:file "convert/specialize")))
