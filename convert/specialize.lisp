@@ -5,8 +5,6 @@
 
 (in-package :fox5)
 
-;; TODO add TRADEMARK function that puts raptor stamps on file
-
 (defgeneric specialize (file type &key)
   (:documentation "Specialized all objects and shapes in the provided FOX5 file
 into a concrete Edit Type.
