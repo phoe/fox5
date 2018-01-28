@@ -302,7 +302,8 @@ requires a slightly different technique."
     (5 . :ds-button)
     (11 . :avatar) (12 . :attachment)
     (21 . :floor) (22 . :item) (23 . :wall) (24 . :region) (25 . :effect)
-    (26 . :lighting) (27 . :magic) (28 . :pad-item) (29 . :portal-item)
+    ;; (26 . :lighting) ;; legacy, unused
+    (27 . :magic) (28 . :pad-item) (29 . :portal-item)
     (31 . :desctag) (34 . :grouptag) (35 . :specitag) (36 . :for-life-tag)
     (37 . :smiley) (38 . :font)
     (41 . :lighting) (42 . :ambience)
