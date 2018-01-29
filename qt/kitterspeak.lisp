@@ -212,6 +212,7 @@ or NIL if it should be paused."))
 (defmacro define-kitterspeak
     (type continuep (&optional (animation 'animation) (arg1 'arg1) (arg2 'arg2))
      &body body)
+  ;; TODO documentation
   (when type
     (assert (member type *kitterspeak* :key #'cdr) ()
             "~S is not a valid Kitterspeak type." type))
