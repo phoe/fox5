@@ -209,9 +209,9 @@ or NIL if it should be paused."))
     ((animation animation) (type null) (arg1 null) (arg2 null))
   "This method is called when the end of KS has been reached. Returns NIL.")
 
-(defmacro define-kitterspeak (type continuep (&optional (animation 'animation)
-                                                (arg1 'arg1) (arg2 'arg2))
-                              &body body)
+(defmacro define-kitterspeak
+    (type continuep (&optional (animation 'animation) (arg1 'arg1) (arg2 'arg2))
+     &body body)
   (when type
     (assert (member type *kitterspeak* :key #'cdr) ()
             "~S is not a valid Kitterspeak type." type))
