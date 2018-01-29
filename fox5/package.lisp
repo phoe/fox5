@@ -20,7 +20,7 @@
    ;; classes
    #:file #:object #:shape #:frame #:sprite #:image
    ;; accessors - generic
-   #:children
+   #:children #:parent
    ;; accessors - file
    #:footer #:filepath #:images #:generator
    ;; accessors - object

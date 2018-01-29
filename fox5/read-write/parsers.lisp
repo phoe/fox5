@@ -429,10 +429,10 @@ requires a slightly different technique."
 ;;; Sprite > Offset
 (define-fox5-reader (#x4F buffer 'sprite)
   (setf (offset *current-object*)
-        (list :x (read16-be buffer)
-              :y (read16-be buffer))))
+        (list :x (readu16-be buffer)
+              :y (readu16-be buffer))))
 
 (define-fox5-writer (sprite offset buffer)
   (writeu8-be #x4F buffer)
-  (write16-be (getf offset :x) buffer)
-  (write16-be (getf offset :y) buffer))
+  (writeu16-be (getf offset :x) buffer)
+  (writeu16-be (getf offset :y) buffer))

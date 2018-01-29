@@ -11,8 +11,9 @@
    #:static-vectors
    #:phoe-toolbox
    #:alexandria
-   #:cl-furcadia/remap)
-  (:shadowing-import-from #:fox5 #:ratio)
+   #:cl-furcadia/remap
+   #:cl-furcadia/constants)
+  (:shadowing-import-from #:fox5 #:ratio #:parent)
   (:export
    #:display #:display2 #:display3 #:display4 #:display5
    #:*sample-color-codes*
@@ -70,10 +71,7 @@
          (length (array-total-size data)))
     (with-static-vector (vector length :initial-contents data)
       (with-finalizing ((qimage (qimage-from image vector)))
-        (q+:qpixmap-from-image qimage)
-        ;; (with-finalizing ((mirrored (q+:mirrored qimage)))
-        ;;   (q+:qpixmap-from-image mirrored))
-        ))))
+        (q+:qpixmap-from-image qimage)))))
 
 (defun qimage-from (image vector)
   (q+:make-qimage (static-vector-pointer vector)
