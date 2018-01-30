@@ -20,9 +20,28 @@ as a part of its work."))
     (:ne :sit) (:ne :walk-right) (:ne :walk) (:ne :walk-left)
     (:sw :lie) (:se :lie) (:nw :lie) (:ne :lie)))
 
+(defmethod specialize ((file file) (type (eql :player)) &key swap-lying-p)
+  (flet ((g (direction state) `(:avatar :avatar nil ,direction :small ,state)))
+    (let ((all-shapes (cdr (mappend #'children (children file))))
+          (shape-types (mapcar (curry #'apply #'g)
+                               %*specialize-avatar-subtypes*)))
+      (loop for list-start = all-shapes then (nthcdr 20 list-start)
+            for object in (cdr (children file))
+            for shapes = (robust-subseq list-start 0 20)
+            when (/= 20 (length shapes))
+              do (loop-finish)
+            do (mapc #'(setf shape-type) shape-types shapes)
+               (setf (children object) '())
+               (mapc (curry #'parent-push object) shapes)
+            when swap-lying-p
+              do (let ((list (last shapes 2)))
+                   (rotatef (shape-type (first list))
+                            (shape-type (second list))))
+            collect object into objects
+            finally (setf (children file) objects))
+      file)))
+
 (defmethod specialize ((file file) (type (eql :avatar)) &key swap-lying-p)
-  ;; TODO currently we only fetch the first avatar. FOX files may contain
-  ;; multiple avatars next to one another - we need to loop for each of them.
   (flet ((g (direction state) `(:avatar :avatar nil ,direction :small ,state)))
     (let ((shapes (mappend #'children (children file)))
           (shape-types (mapcar (curry #'apply #'g)
