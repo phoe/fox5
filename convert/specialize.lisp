@@ -21,6 +21,8 @@ as a part of its work."))
     (:sw :lie) (:se :lie) (:nw :lie) (:ne :lie)))
 
 (defmethod specialize ((file file) (type (eql :avatar)) &key swap-lying-p)
+  ;; TODO currently we only fetch the first avatar. FOX files may contain
+  ;; multiple avatars next to one another - we need to loop for each of them.
   (flet ((g (direction state) `(:avatar :avatar nil ,direction :small ,state)))
     (let ((shapes (mappend #'children (children file)))
           (shape-types (mapcar (curry #'apply #'g)

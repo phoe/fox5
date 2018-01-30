@@ -15,8 +15,8 @@
    (current-shape :accessor current-shape
                   :initarg :current-shape
                   :initform 0)
-   (current-frame :accessor current-frame
-                  :initform 0)
+   ;; (current-frame :accessor current-frame
+   ;;                :initform nil)
    (current-step :accessor current-step
                  :initform 0)
    (color-code :accessor color-code
@@ -135,6 +135,30 @@ displayed items, generated from sprites. The ordering is:
 ;;                 (setf (q+:opacity item) 0.5)
 ;;                 (setf (q+:zvalue item) 0)))))))))
 
+;; (defgeneric execute-kitterspeak (shape animation type arg1 arg2)
+;;   (:documentation "Executes the provided kitterspeak line. Dispatch is done
+;; based on TYPE argument, which must be one of the CDRs of *KITTERSPEAK*."))
+
+;; (defmethod execute-kitterspeak
+;;     ((shape shape) (animation animation)
+;;      (type symbol) (arg1 integer) (arg2 integer))
+;;   ;; Fallback method - we currently ignore unknown kitterspeak lines.
+;;   ;; The below assertion is to make sure that we do not have typos in type name.
+;;   (assert (member type *kitterspeak* :key #'cdr)))
+
+;; (defmethod execute-kitterspeak
+;;     ((shape shape) (animation animation)
+;;      (type (eql :show-frame)) (arg1 integer) (arg2 integer))
+;;   (with-slots-bound (anmation animation)
+;;     (let* ((frame (nth arg1 (children shape)))
+;;            (x-offset (getf (frame-offset frame) :x))
+;;            (y-offset (getf (frame-offset frame) :y)))
+;;       (flet ((pred (purposes) (lambda (x) (member (purpose x) purposes))))
+;;         (when-let ((sprite (find-if (pred '(nil :remapping-data))
+;;                                     (children frame))))
+;;           (let ((item (sprite-item sprite color-code x-offset y-offset)))
+;;             (setf (aref ))))))))
+
 ;; TODO optimize: keep all sprites precomputed as items in a weak hash table(?)
 
 (defun update (animation)
@@ -152,7 +176,7 @@ displayed items, generated from sprites. The ordering is:
 
 (defun draw-frame (animation frame layer)
   (with-slots-bound (animation animation)
-    (setf current-frame frame)
+    ;;(setf current-frame frame)
     (let* ((shadow-index (ecase layer (:bg 0) (:behind 1) (:front 2) (:fg 3)))
            (data-index (+ shadow-index 4))
            (x-offset (getf (frame-offset frame) :x))
@@ -167,6 +191,8 @@ displayed items, generated from sprites. The ordering is:
              (setf (aref layers shadow-index) item
                    (q+:zvalue item) (- 8 shadow-index)
                    (q+:opacity item) 0.5))))))))
+
+;; TODO https://stackoverflow.com/questions/7451183/
 
 (defun sprite-item (sprite &optional color-code x-offset y-offset)
   (let* ((offset (offset sprite))
@@ -212,54 +238,186 @@ or NIL if it should be paused."))
 (defmacro define-kitterspeak
     (type continuep (&optional (animation 'animation) (arg1 'arg1) (arg2 'arg2))
      &body body)
-  ;; TODO documentation
+  "Defines a method for parsing Kitterspeak for line TYPE. CONTINUEP states if
+Kitterspeak processing should continue after the body of this method. Return
+value of BODY is ignored."
   (when type
     (assert (member type *kitterspeak* :key #'cdr) ()
             "~S is not a valid Kitterspeak type." type))
   `(defmethod execute-step
        ((,animation animation) (type (eql ,type)) ,arg1 ,arg2)
-     (with-slots-bound (,animation animation)
-       ,@body)
+     ,@(if (and body (stringp (first body)))
+           `(,(car body)
+             (with-slots-bound (,animation animation)
+               ,@(cdr body)))
+           `(with-slots-bound (,animation animation)
+              ,@body))
      ,(if continuep t nil)))
 
-(define-kitterspeak nil nil ())
+;; 0 - null line
 
-(define-kitterspeak :show-bg-frame t (animation nframe)
-  (let ((frame (nth nframe (children current-shape))))
-    (draw-frame animation frame :bg)))
+(define-kitterspeak nil nil ()
+  "Null method. Called each time the Kitterspeak reaches its end.")
+
+;; 1 - :SHOW-FRAME
 
 (define-kitterspeak :show-behind-frame t (animation nframe)
+  "Shows frame number NFRAME on layer BEHIND.
+Legacy - replaced by :SHOW-BG-FRAME."
   (let ((frame (nth nframe (children current-shape))))
     (draw-frame animation frame :behind)))
 
-(define-kitterspeak :show-front-frame t (animation nframe)
+;; 2 - :DELAY
+
+;; TODO
+
+;; 3 - :LOOP
+
+;; TODO
+
+;; 4 - :JUMP
+
+;; TODO
+
+;; 5 - :POSX
+
+;; TODO
+
+;; 6 - :POSY
+
+;; TODO
+
+;; 7 - :FURRE-X
+
+;; TODO
+
+;; 8 - :FURRE-Y
+
+;; TODO
+
+;; 9 - :DRAW-FRONT
+
+;; TODO
+
+;; 10 - :DRAW-BEHIND
+
+;; TODO
+
+;; 11 - :AUTO-FRAME-DELAY
+
+;; TODO
+
+;; 12 - :STOP
+
+;; TODO
+
+;; 13 - :CAMERA-STATE
+
+;; TODO
+
+;; 14 - :RAND-FRAME-DELAY
+
+;; TODO
+
+;; 15 - :SHAPE-FRAME
+
+;; TODO
+
+;; 16 - :SHAPE-FRAME
+
+;; TODO
+
+;; 17 - :OPACITY
+
+;; TODO
+
+;; 18 - :SLIDE-POSX
+
+;; TODO
+
+;; 19 - :SLIDE-POSY
+
+;; TODO
+
+;; 20 - :SLIDE-FURREX
+
+;; TODO
+
+;; 21 - :SLIDE-FURREY
+
+;; TODO
+
+;; 22 - :SLIDE-OPACITY
+
+;; TODO
+
+;; 23 - :SHOW-BG-FRAME
+
+(define-kitterspeak :show-bg-frame t (animation nframe)
+  "Shows frame number NFRAME on layer BG."
   (let ((frame (nth nframe (children current-shape))))
-    (draw-frame animation frame :front)))
+    (draw-frame animation frame :bg)))
+
+;; 24 - :SHOW-FG-FRAME
 
 (define-kitterspeak :show-fg-frame t (animation nframe)
+  "Shows frame number NFRAME on layer FG."
   (let ((frame (nth nframe (children current-shape))))
     (draw-frame animation frame :fg)))
 
-;; (defgeneric execute-kitterspeak (shape animation type arg1 arg2)
-;;   (:documentation "Executes the provided kitterspeak line. Dispatch is done
-;; based on TYPE argument, which must be one of the CDRs of *KITTERSPEAK*."))
+;; 25 - :SHOW-BG-OBJECT
 
-;; (defmethod execute-kitterspeak
-;;     ((shape shape) (animation animation)
-;;      (type symbol) (arg1 integer) (arg2 integer))
-;;   ;; Fallback method - we currently ignore unknown kitterspeak lines.
-;;   ;; The below assertion is to make sure that we do not have typos in type name.
-;;   (assert (member type *kitterspeak* :key #'cdr)))
+;; TODO
 
-;; (defmethod execute-kitterspeak
-;;     ((shape shape) (animation animation)
-;;      (type (eql :show-frame)) (arg1 integer) (arg2 integer))
-;;   (with-slots-bound (anmation animation)
-;;     (let* ((frame (nth arg1 (children shape)))
-;;            (x-offset (getf (frame-offset frame) :x))
-;;            (y-offset (getf (frame-offset frame) :y)))
-;;       (flet ((pred (purposes) (lambda (x) (member (purpose x) purposes))))
-;;         (when-let ((sprite (find-if (pred '(nil :remapping-data))
-;;                                     (children frame))))
-;;           (let ((item (sprite-item sprite color-code x-offset y-offset)))
-;;             (setf (aref ))))))))
+;; 26 - :SHOW-FG-OBJECT
+
+;; TODO
+
+;; 27 - :HIDE-BG
+
+(define-kitterspeak :hide-bg t (animation)
+  "Deletes the frame currently on layer BG."
+  ;; TODO turn into function (REMOVE-FRAME ANIMATION LAYER)
+  (when-let ((item (aref layers 1)))
+    (setf (aref layers 1) nil)
+    (q+:remove-item scene item)
+    (finalize item))
+  (when-let ((item (aref layers 5)))
+    (setf (aref layers 5) nil)
+    (q+:remove-item scene item)
+    (finalize item)))
+
+;; 28 - :HIDE-FG
+
+(define-kitterspeak :hide-fg t (animation)
+  "Deletes the frame currently on layer FG."
+  (when-let ((item (aref layers 2)))
+    (setf (aref layers 2) nil)
+    (q+:remove-item scene item)
+    (finalize item))
+  (when-let ((item (aref layers 6)))
+    (setf (aref layers 6) nil)
+    (q+:remove-item scene item)
+    (finalize item)))
+
+;; 29 - :SHOW-BEHIND-FRAME
+
+(define-kitterspeak :show-behind-frame t (animation nframe)
+  "Shows frame number NFRAME on layer BEHIND."
+  (let ((frame (nth nframe (children current-shape))))
+    (draw-frame animation frame :behind)))
+
+;; 30 - :SHOW-FRONT-FRAME
+
+(define-kitterspeak :show-front-frame t (animation nframe)
+  "Shows frame number NFRAME on layer FRONT."
+  (let ((frame (nth nframe (children current-shape))))
+    (draw-frame animation frame :front)))
+
+;; 31 - :MOVE-FORWARD
+
+;; TODO
+
+;; 32 - :MOVE-BACKWARD
+
+;; TODO
