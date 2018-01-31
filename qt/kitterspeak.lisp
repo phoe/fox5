@@ -15,10 +15,14 @@
    (current-shape :accessor current-shape
                   :initarg :current-shape
                   :initform 0)
-   ;; (current-frame :accessor current-frame
-   ;;                :initform nil)
    (current-step :accessor current-step
                  :initform 0)
+   (delay-min :accessor delay-min
+              :initform 100)
+   (delay-max :accessor delay-max
+              :initform 100)
+   (auto-delay-p :accessor auto-delay-p
+                 :initform t)
    (color-code :accessor color-code
                :initarg :color-code
                :initform nil)
@@ -176,7 +180,6 @@ displayed items, generated from sprites. The ordering is:
 
 (defun draw-frame (animation frame layer)
   (with-slots-bound (animation animation)
-    ;;(setf current-frame frame)
     (let* ((shadow-index (ecase layer (:bg 0) (:behind 1) (:front 2) (:fg 3)))
            (data-index (+ shadow-index 4))
            (x-offset (getf (frame-offset frame) :x))
@@ -208,9 +211,15 @@ displayed items, generated from sprites. The ordering is:
 (defvar *max-kitterspeak-steps* 50
   "The maximum number of steps to execute.")
 
+(defvar *kitterspeak-stop-delay* 2000
+  "Defines if Kitterspeak :STOP step should stop Kitterspeak execution forever
+or rather induce a delay before restarting it.
+If NIL, then STOP commands completely stop Kitterspeak execution.
+If non-NIL, then the value of this variable is the number of milliseconds
+that will pass before KS execution is restarted from the beginning.")
+
 (defun execute-kitterspeak (animation)
   "Begins Kitterspeak execution in the provided animation."
-  ;; TODO max amount of steps
   (with-slots-bound (animation animation)
     (with-accessors ((kitterspeak kitterspeak)) current-shape
       (when kitterspeak
@@ -238,9 +247,10 @@ or NIL if it should be paused."))
 (defmacro define-kitterspeak
     (type continuep (&optional (animation 'animation) (arg1 'arg1) (arg2 'arg2))
      &body body)
-  "Defines a method for parsing Kitterspeak for line TYPE. CONTINUEP states if
-Kitterspeak processing should continue after the body of this method. Return
-value of BODY is ignored."
+  "Defines a method for parsing Kitterspeak for line TYPE. Return value of BODY
+is ignored.  CONTINUEP states if Kitterspeak processing should continue after
+the body of this method (in case of most steps), or if it should pause (forever,
+in case of :STOP, or until the timer fires next time, in case of delays)."
   (when type
     (assert (member type *kitterspeak* :key #'cdr) ()
             "~S is not a valid Kitterspeak type." type))
@@ -254,102 +264,17 @@ value of BODY is ignored."
               ,@body))
      ,(if continuep t nil)))
 
-;; 0 - null line
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Null case
+
+;; 0 - NIL
 
 (define-kitterspeak nil nil ()
-  "Null method. Called each time the Kitterspeak reaches its end.")
+  "Null method. Called each time the Kitterspeak reaches its end. This method's
+ sole purpose is to return NIL, so Kitterspeak execution is halted.")
 
-;; 1 - :SHOW-FRAME
-
-(define-kitterspeak :show-behind-frame t (animation nframe)
-  "Shows frame number NFRAME on layer BEHIND.
-Legacy - replaced by :SHOW-BG-FRAME."
-  (let ((frame (nth nframe (children current-shape))))
-    (draw-frame animation frame :behind)))
-
-;; 2 - :DELAY
-
-;; TODO
-
-;; 3 - :LOOP
-
-;; TODO
-
-;; 4 - :JUMP
-
-;; TODO
-
-;; 5 - :POSX
-
-;; TODO
-
-;; 6 - :POSY
-
-;; TODO
-
-;; 7 - :FURRE-X
-
-;; TODO
-
-;; 8 - :FURRE-Y
-
-;; TODO
-
-;; 9 - :DRAW-FRONT
-
-;; TODO
-
-;; 10 - :DRAW-BEHIND
-
-;; TODO
-
-;; 11 - :AUTO-FRAME-DELAY
-
-;; TODO
-
-;; 12 - :STOP
-
-;; TODO
-
-;; 13 - :CAMERA-STATE
-
-;; TODO
-
-;; 14 - :RAND-FRAME-DELAY
-
-;; TODO
-
-;; 15 - :SHAPE-FRAME
-
-;; TODO
-
-;; 16 - :SHAPE-FRAME
-
-;; TODO
-
-;; 17 - :OPACITY
-
-;; TODO
-
-;; 18 - :SLIDE-POSX
-
-;; TODO
-
-;; 19 - :SLIDE-POSY
-
-;; TODO
-
-;; 20 - :SLIDE-FURREX
-
-;; TODO
-
-;; 21 - :SLIDE-FURREY
-
-;; TODO
-
-;; 22 - :SLIDE-OPACITY
-
-;; TODO
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Frame order
 
 ;; 23 - :SHOW-BG-FRAME
 
@@ -357,48 +282,6 @@ Legacy - replaced by :SHOW-BG-FRAME."
   "Shows frame number NFRAME on layer BG."
   (let ((frame (nth nframe (children current-shape))))
     (draw-frame animation frame :bg)))
-
-;; 24 - :SHOW-FG-FRAME
-
-(define-kitterspeak :show-fg-frame t (animation nframe)
-  "Shows frame number NFRAME on layer FG."
-  (let ((frame (nth nframe (children current-shape))))
-    (draw-frame animation frame :fg)))
-
-;; 25 - :SHOW-BG-OBJECT
-
-;; TODO
-
-;; 26 - :SHOW-FG-OBJECT
-
-;; TODO
-
-;; 27 - :HIDE-BG
-
-(define-kitterspeak :hide-bg t (animation)
-  "Deletes the frame currently on layer BG."
-  ;; TODO turn into function (REMOVE-FRAME ANIMATION LAYER)
-  (when-let ((item (aref layers 1)))
-    (setf (aref layers 1) nil)
-    (q+:remove-item scene item)
-    (finalize item))
-  (when-let ((item (aref layers 5)))
-    (setf (aref layers 5) nil)
-    (q+:remove-item scene item)
-    (finalize item)))
-
-;; 28 - :HIDE-FG
-
-(define-kitterspeak :hide-fg t (animation)
-  "Deletes the frame currently on layer FG."
-  (when-let ((item (aref layers 2)))
-    (setf (aref layers 2) nil)
-    (q+:remove-item scene item)
-    (finalize item))
-  (when-let ((item (aref layers 6)))
-    (setf (aref layers 6) nil)
-    (q+:remove-item scene item)
-    (finalize item)))
 
 ;; 29 - :SHOW-BEHIND-FRAME
 
@@ -414,6 +297,13 @@ Legacy - replaced by :SHOW-BG-FRAME."
   (let ((frame (nth nframe (children current-shape))))
     (draw-frame animation frame :front)))
 
+;; 24 - :SHOW-FG-FRAME
+
+(define-kitterspeak :show-fg-frame t (animation nframe)
+  "Shows frame number NFRAME on layer FG."
+  (let ((frame (nth nframe (children current-shape))))
+    (draw-frame animation frame :fg)))
+
 ;; 31 - :MOVE-FORWARD
 
 ;; TODO
@@ -421,3 +311,159 @@ Legacy - replaced by :SHOW-BG-FRAME."
 ;; 32 - :MOVE-BACKWARD
 
 ;; TODO
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Flow control
+
+;; 2 - :DELAY
+
+;; TODO
+
+;; 15 - :RANDOM-FRAME-DELAY
+
+;; TODO
+
+;; 11 - :AUTO-FRAME-DELAY
+
+;; TODO
+
+;; 14 - :RANDOM-FRAME-AUTO-DELAY
+
+;; TODO
+
+;; 3 - :LOOP
+
+;; TODO
+
+;; 4 - :JUMP
+
+(define-kitterspeak :jump t (animation nstep)
+  "Jumps to step N."
+  (setf current-step (1- nstep)))
+
+;; 12 - :STOP
+
+(define-kitterspeak :stop nil (animation)
+  "Stops Kitterspeak execution. If *KITTERSPEAK-STOP-DELAY* is set, executes
+a delay defined by that variable instead."
+  (when-let ((delay *kitterspeak-stop-delay*))
+    (execute-step animation :delay delay 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Offset - set
+
+;; 5 - :FRAME-X
+
+;; TODO
+
+;; 6 - :FRAME-Y
+
+;; TODO
+
+;; 7 - :FURRE-X
+
+(define-kitterspeak :furre-x t ()
+  "Set furre's X offset.
+Not implemented.")
+
+;; 8 - :FURRE-Y
+
+(define-kitterspeak :furre-y t ()
+  "Set furre's Y offset.
+Not implemented.")
+
+;; 17 - :OPACITY
+
+;; TODO
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Offset - slide
+
+;; 18 - :SLIDE-FRAME-X
+
+;; TODO
+
+;; 19 - :SLIDE-FRAME-Y
+
+;; TODO
+
+;; 20 - :SLIDE-FURREX
+
+(define-kitterspeak :slide-furre-x t ()
+  "Slide furre's X offset.
+Not implemented.")
+
+;; 21 - :SLIDE-FURREY
+
+(define-kitterspeak :slide-furre-y t ()
+  "Slide furre's X offset.
+Not implemented.")
+
+;; 22 - :SLIDE-OPACITY
+
+;; TODO
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Camera control
+
+;; 13 - :CAMERA-FOLLOW-FURRE-P
+
+(define-kitterspeak :camera-follow-furre-p t ()
+  "Sets if the camera should follow furre position.
+Not implemented.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Effect layer
+
+;; 33 - :EFFECT-LAYER-MODE
+
+(define-kitterspeak :effect-layer-mode t ()
+  "Sets if effect frames should wrap shape frames or be wrapped by them.
+Not implemented.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Legacy rules
+
+;; 1 - :SHOW-FRAME
+
+(define-kitterspeak :show-behind-frame t (animation nframe)
+  "Shows frame number NFRAME on layer BEHIND.
+Legacy - replaced by :SHOW-BEHIND-FRAME."
+  (let ((frame (nth nframe (children current-shape))))
+    (draw-frame animation frame :behind)))
+
+;; 9 - :DRAW-FRONT
+
+;; TODO
+
+;; 10 - :DRAW-BEHIND
+
+;; TODO
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Hic sunt dracones
+
+;; 16 - :SHAPE-FRAME
+
+(define-kitterspeak :shape-frame t ()
+  "Deprecated, not implemented.")
+
+;; 25 - :SHOW-BG-OBJECT
+
+(define-kitterspeak :show-bg-object t ()
+  "Deprecated, not implemented.")
+
+;; 26 - :SHOW-FG-OBJECT
+
+(define-kitterspeak :show-fg-object t ()
+  "Deprecated, not implemented.")
+
+;; 27 - :HIDE-BG
+
+(define-kitterspeak :hide-bg t ()
+  "Deprecated, not implemented.")
+
+;; 28 - :HIDE-FG
+
+(define-kitterspeak :hide-fg t ()
+  "Deprecated, not implemented.")
