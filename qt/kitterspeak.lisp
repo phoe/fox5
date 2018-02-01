@@ -6,21 +6,142 @@
 (in-package :fox5/qt)
 (in-readtable :qtools)
 
+;; Utilities
+
+(defmacro finalize-when (object)
+  (with-gensyms (gensym)
+    `(let ((,gensym ,object))
+       (when ,gensym (finalize ,gensym)))))
+
+;; N-timer
+
+(define-widget n-timer (qtimer)
+  ((shots :accessor shots
+          :initarg :shots
+          :initform 0)
+   (end-thunk :accessor end-thunk
+              :initarg :end-thunk
+              :initform (constantly t))))
+
+(define-slot (n-timer fired) ()
+  (declare (connected n-timer (timeout)))
+  (when (>= 0 (decf shots))
+    (q+:stop n-timer)
+    (funcall end-thunk)))
+
+;; Seq-timer
+
+(define-widget seq-timer (qtimer)
+  ((loopp :accessor loopp
+          :initarg :loopp
+          :initform nil)
+   (delays :accessor delays
+           :initarg :delays
+           :initform '())
+   (original-delays :accessor original-delays)
+   (end-thunk :accessor end-thunk
+              :initarg :end-thunk
+              :initform (constantly t))))
+
+(defmethod initialize-instance :after ((timer seq-timer) &key)
+  (with-slots-bound (timer seq-timer)
+    (setf (q+:single-shot timer) t
+          original-delays delays)))
+
+(defmethod start ((timer seq-timer))
+  (with-slots-bound (timer seq-timer)
+    (cond
+      ((not (null delays))
+       (q+:start timer (pop delays)))
+      (loopp
+       (setf delays original-delays)
+       (q+:start timer (pop delays)))
+      (t
+       (funcall end-thunk)))))
+
+(define-slot (seq-timer fired) ()
+  (declare (connected seq-timer (timeout)))
+  (start seq-timer))
+
+;;; simple test
+
+(define-widget n-timer-testbox (qwidget)
+  ((n-timer :initform (make-instance
+                       'n-timer
+                       :shots 10
+                       :end-thunk (curry #'print "n-timer done")))
+   (seq-timer :initform (make-instance
+                         'seq-timer
+                         :loopp nil
+                         :delays '(1000 500 0)
+                         :end-thunk (curry #'print "seq-timer done")))))
+
+(define-subwidget (n-timer-testbox layout) (q+:make-qvboxlayout)
+  (setf (q+:layout n-timer-testbox) layout))
+
+(define-slot (n-timer-testbox add-button) ()
+  (declare (connected n-timer (timeout)))
+  (let ((name (format nil "n-timer shots left: ~D" (shots n-timer))))
+    (q+:add-widget layout (q+:make-qpushbutton name))))
+
+(define-slot (n-timer-testbox add-seq-button) ()
+  (declare (connected seq-timer (timeout)))
+  (let ((name (format nil "seq-timer")))
+    (q+:add-widget layout (q+:make-qpushbutton name))))
+
+(defun test-n-timer ()
+  (with-main-window (main-window 'n-timer-testbox)
+    (with-slots-bound (main-window n-timer-testbox)
+      (q+:start n-timer 300)
+      (start seq-timer))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ;;; Widget
 
-(define-widget animation (qwidget)
-  ((shapes :accessor shapes
-           :initarg :shapes
-           :initform '())
-   (current-shape :accessor current-shape
-                  :initarg :current-shape
-                  :initform 0)
+(define-widget animator (qwidget)
+  ((shape :accessor shape
+          :initarg :shape
+          :initform 0)
    (current-step :accessor current-step
                  :initform 0)
    (delay-min :accessor delay-min
-              :initform 100)
+              :initform 0)
    (delay-max :accessor delay-max
-              :initform 100)
+              :initform 0)
    (auto-delay-p :accessor auto-delay-p
                  :initform t)
    (color-code :accessor color-code
@@ -28,10 +149,22 @@
                :initform nil)
    (scene :reader scene
           :initform (q+:make-qgraphicsscene))
-   (timer :reader timer
-          :initform (q+:make-qtimer))
+   (frame-layers :reader frame-layers
+                 :initform (make-array 4 :initial-element nil))
    (layers :reader layers
-           :initform (make-array 8 :initial-element nil)))
+           :initform (make-array 8 :initial-element nil))
+   (x-override :accessor x-override
+               :initform nil)
+   (y-override :accessor y-override
+               :initform nil)
+   (opacity-override :accessor opacity-override
+                     :initform nil)
+   (x-timer :accessor x-timer
+            :initform nil)
+   (y-timer :accessor y-timer
+            :initform nil)
+   (opacity-timer :accessor opacity-timer
+                  :initform nil))
   (:documentation "A widget capable of displaying animated FOX5 shapes.
 LAYERS is an eight-element array that is meant to contain the currently ~
 displayed items, generated from sprites. The ordering is:
@@ -44,15 +177,17 @@ displayed items, generated from sprites. The ordering is:
 6: front, data
 7: FG, data"))
 
-(define-finalizer (animation finalize-animation)
-  (finalize (scene animation))
-  (finalize (timer animation)))
+(define-finalizer (animator finalize-animator)
+  (finalize (scene animator))
+  (finalize-when (slide-x-animation animator))
+  (finalize-when (slide-y-animation animator))
+  (finalize-when (slide-opacity-animation animator)))
 
-(define-subwidget (animation layout) (q+:make-qgridlayout)
-  (setf (q+:layout animation) layout
+(define-subwidget (animator layout) (q+:make-qgridlayout)
+  (setf (q+:layout animator) layout
         (q+:contents-margins layout) (values 0 0 0 0)))
 
-(define-subwidget (animation preview) (q+:make-qgraphicsview (scene animation))
+(define-subwidget (animator preview) (q+:make-qgraphicsview (scene animator))
   (q+:add-widget layout preview 0 0 1 2)
   (setf (q+:row-stretch layout 0) 9001))
 
@@ -62,128 +197,51 @@ displayed items, generated from sprites. The ordering is:
           (q+:tool-button-style button) (q+:qt.tool-button-text-only))
     button))
 
-(define-subwidget (animation prev-button) (make-text-qtoolbutton "<")
+(define-subwidget (animator prev-button) (make-text-qtoolbutton "<")
   (q+:add-widget layout prev-button 1 0)
   (setf (q+:size-policy prev-button)
         (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
 
-(define-subwidget (animation next-button) (make-text-qtoolbutton ">")
+(define-subwidget (animator next-button) (make-text-qtoolbutton ">")
   (q+:add-widget layout next-button 1 1)
   (setf (q+:size-policy next-button)
         (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
 
-;;; Methods
+;;; Functions
 
-;; (defmethod animate ((animation animation) (object object)
-;;                     &key (predicate (constantly t)) color-code)
-;;   (let ((shapes (remove-if-not predicate (children object))))
-;;     (setf (shapes animation) shapes
-;;           (current-shape animation) 0
-;;           (color-code animation) color-code)
-;;     ;; We want to display this shape. This means that we need to:
-;;     ;; * set the defaults,
-;;     (initialize animation)
-;;     ;; * begin parsing Kitterspeak.
-;;     ))
-
-;; (defmethod initialize ((animation animation))
-;;   (with-slots-bound (animation animation)
-;;     (when-let ((shape (nth current-shape shapes)))
-;;       (let* ((frame (first (children shape)))
-;;              (sprite (find-if (rcurry #'member '(nil :remapping-data))
-;;                               (children frame) :key #'purpose))
-;;              (frame-x-offset (getf (frame-offset frame) :x))
-;;              (frame-y-offset (getf (frame-offset frame) :y))
-;;              (sprite-x-offset (getf (offset sprite) :x))
-;;              (sprite-y-offset (getf (offset sprite) :y))
-;;              (item (sprite-item sprite color-code
-;;                                 (+ frame-x-offset sprite-x-offset)
-;;                                 (+ frame-y-offset sprite-y-offset))))
-;;         (setf (q+:zvalue item) current-shape
-;;               (aref layers current-shape) item)
-;;         (q+:add-item scene item)))))
-
-;; (defmethod update ((animation animation))
-;;   (with-slots-bound (animation animation)
-;;     ;; We need to clear the scratch space.
-;;     (q+:clear preview)
-;;     (loop for i below 8 do (setf (aref layers i) nil)) ;; TODO optimize this
-;;     ;; We need to figure out which shape needs to be displayed now.
-;;     (let ((shape (nth current-shape shapes)))
-;;       (when (null shape) (setf shape (first shapes)))
-;;       )))
-
-;; (lambda (x) (and (eq (third (shape-type x)) :male)
-;;                  (eq (second (shape-type x)) :avatar)))
-
-;; (defun add-sprite (scene sprite layer &key (x-offset 0) (y-offset 0) color-code)
-;;   (let ((purpose (purpose sprite))
-;;         (item (sprite-qgraphicsitem sprite color-code x-offset y-offset))
-;;         (zvalue (ecase layer (:fg 40) (:front 30) (:behind 20) (:bg 10))))
-;;     (cond ((eq purpose :shadow-layer)
-;;            (setf (q+:opacity item) 0.5
-;;                  (q+:zvalue item) (- zvalue 5)))
-;;           (t (setf (q+:zvalue item) zvalue)))
-;;     (q+:add-item scene item)))
-
-;; (defun show-frame (frame &optional color-code)
-;;   (with-finalizing ((scene (q+:make-qgraphicsscene)))
-;;     (with-main-window (view (q+:make-qgraphicsview scene))
-;;       (dolist (sprite (children frame))
-;;         (let ((purpose (purpose sprite)))
-;;           (when (member purpose '(nil :remapping-data :shadow-layer))
-;;             (let ((item (sprite-qgraphicsitem sprite :color-code color-code)))
-;;               (q+:add-item scene item)
-;;               (setf (q+:zvalue item) 10)
-;;               (when (eq purpose :shadow-layer)
-;;                 (setf (q+:opacity item) 0.5)
-;;                 (setf (q+:zvalue item) 0)))))))))
-
-;; (defgeneric execute-kitterspeak (shape animation type arg1 arg2)
-;;   (:documentation "Executes the provided kitterspeak line. Dispatch is done
-;; based on TYPE argument, which must be one of the CDRs of *KITTERSPEAK*."))
-
-;; (defmethod execute-kitterspeak
-;;     ((shape shape) (animation animation)
-;;      (type symbol) (arg1 integer) (arg2 integer))
-;;   ;; Fallback method - we currently ignore unknown kitterspeak lines.
-;;   ;; The below assertion is to make sure that we do not have typos in type name.
-;;   (assert (member type *kitterspeak* :key #'cdr)))
-
-;; (defmethod execute-kitterspeak
-;;     ((shape shape) (animation animation)
-;;      (type (eql :show-frame)) (arg1 integer) (arg2 integer))
-;;   (with-slots-bound (anmation animation)
-;;     (let* ((frame (nth arg1 (children shape)))
-;;            (x-offset (getf (frame-offset frame) :x))
-;;            (y-offset (getf (frame-offset frame) :y)))
-;;       (flet ((pred (purposes) (lambda (x) (member (purpose x) purposes))))
-;;         (when-let ((sprite (find-if (pred '(nil :remapping-data))
-;;                                     (children frame))))
-;;           (let ((item (sprite-item sprite color-code x-offset y-offset)))
-;;             (setf (aref ))))))))
-
-;; TODO optimize: keep all sprites precomputed as items in a weak hash table(?)
-
-(defun update (animation)
-  (with-slots-bound (animation animation)
+(defun update (animator)
+  (with-slots-bound (animator animator)
+    ;; TODO optimize
     (q+:clear scene)
     ;; TODO multiple shadows will not get drawn correctly because 0.5 dark
     ;; opacity * 0.5 dark opacity will turn into 0.75 dark opacity, not 0.5
     (loop for item across layers when item do (q+:add-item scene item))))
 
-(defun draw-shape (animation shape)
-  (with-slots-bound (animation animation)
-    (setf current-shape shape)
-    (draw-frame animation (first (children shape)) :behind)
-    (execute-kitterspeak animation)))
+(defun draw-shape (animator shape)
+  (setf (shape animator) shape)
+  (with-slots-bound (animator animator)
+    (if (kitterspeak shape)
+        (execute-kitterspeak animator)
+        (draw-frame animator (first (children shape)) :behind)
+        ;; TODO in case of effect shapes, the default layer is :FRONT
+        )))
 
-(defun draw-frame (animation frame layer)
-  (with-slots-bound (animation animation)
+(defun draw-frame (animator frame layer)
+  (with-slots-bound (animator animator)
     (let* ((shadow-index (ecase layer (:bg 0) (:behind 1) (:front 2) (:fg 3)))
            (data-index (+ shadow-index 4))
-           (x-offset (getf (frame-offset frame) :x))
-           (y-offset (getf (frame-offset frame) :y)))
+           (x-offset (or x-override (getf (frame-offset frame) :x)))
+           (y-offset (or y-override (getf (frame-offset frame) :y))))
+      ;; remove frame from layers and frame-layers
+      (loop for frame-layer across frame-layers
+            for i from 0
+            if (eq frame-layer frame)
+              do (setf (aref frame-layers i) nil
+                       (aref layers i) nil
+                       (aref layers (+ 4 i)) nil))
+      ;; add frame to frame-layers
+      (setf (aref frame-layers shadow-index) frame)
+      ;; add items to layers
       (dolist (sprite (children frame))
         (let ((item (sprite-item sprite color-code x-offset y-offset)))
           (case (purpose sprite)
@@ -218,34 +276,34 @@ If NIL, then STOP commands completely stop Kitterspeak execution.
 If non-NIL, then the value of this variable is the number of milliseconds
 that will pass before KS execution is restarted from the beginning.")
 
-(defun execute-kitterspeak (animation)
-  "Begins Kitterspeak execution in the provided animation."
-  (with-slots-bound (animation animation)
-    (with-accessors ((kitterspeak kitterspeak)) current-shape
+(defun execute-kitterspeak (animator)
+  "Begins Kitterspeak execution in the provided animator."
+  (with-slots-bound (animator animator)
+    (with-accessors ((kitterspeak kitterspeak)) shape
       (when kitterspeak
         (when (null (nth current-step kitterspeak))
           (setf current-step 0))
         (loop repeat *max-kitterspeak-steps*
               for step = (nth current-step kitterspeak) ;; TODO optimize NTH
               for (type arg1 arg2) = step
-              for continuep = (funcall #'execute-step animation type arg1 arg2)
+              for continuep = (funcall #'execute-step animator type arg1 arg2)
               if continuep
                 do (incf current-step)
               else
                 return nil)
-        (update animation)))))
+        (update animator)))))
 
-(defgeneric execute-step (animation type arg1 arg2)
+(defgeneric execute-step (animator type arg1 arg2)
   (:documentation "Executes the Kitterspeak step denoted by TYPE, ARG1 and ARG2.
 Must return non-NIL if the execution is meant to be continued after this step,
 or NIL if it should be paused."))
 
 (defmethod execute-step
-    ((animation animation) (type null) (arg1 null) (arg2 null))
+    ((animator animator) (type null) (arg1 null) (arg2 null))
   "This method is called when the end of KS has been reached. Returns NIL.")
 
 (defmacro define-kitterspeak
-    (type continuep (&optional (animation 'animation) (arg1 'arg1) (arg2 'arg2))
+    (type continuep (&optional (animator 'animator) (arg1 'arg1) (arg2 'arg2))
      &body body)
   "Defines a method for parsing Kitterspeak for line TYPE. Return value of BODY
 is ignored.  CONTINUEP states if Kitterspeak processing should continue after
@@ -255,12 +313,12 @@ in case of :STOP, or until the timer fires next time, in case of delays)."
     (assert (member type *kitterspeak* :key #'cdr) ()
             "~S is not a valid Kitterspeak type." type))
   `(defmethod execute-step
-       ((,animation animation) (type (eql ,type)) ,arg1 ,arg2)
+       ((,animator animator) (type (eql ,type)) ,arg1 ,arg2)
      ,@(if (and body (stringp (first body)))
            `(,(car body)
-             (with-slots-bound (,animation animation)
+             (with-slots-bound (,animator animator)
                ,@(cdr body)))
-           `(with-slots-bound (,animation animation)
+           `(with-slots-bound (,animator animator)
               ,@body))
      ,(if continuep t nil)))
 
@@ -278,31 +336,31 @@ in case of :STOP, or until the timer fires next time, in case of delays)."
 
 ;; 23 - :SHOW-BG-FRAME
 
-(define-kitterspeak :show-bg-frame t (animation nframe)
+(define-kitterspeak :show-bg-frame t (animator nframe)
   "Shows frame number NFRAME on layer BG."
-  (let ((frame (nth nframe (children current-shape))))
-    (draw-frame animation frame :bg)))
+  (let ((frame (nth nframe (children shape))))
+    (draw-frame animator frame :bg)))
 
 ;; 29 - :SHOW-BEHIND-FRAME
 
-(define-kitterspeak :show-behind-frame t (animation nframe)
+(define-kitterspeak :show-behind-frame t (animator nframe)
   "Shows frame number NFRAME on layer BEHIND."
-  (let ((frame (nth nframe (children current-shape))))
-    (draw-frame animation frame :behind)))
+  (let ((frame (nth nframe (children shape))))
+    (draw-frame animator frame :behind)))
 
 ;; 30 - :SHOW-FRONT-FRAME
 
-(define-kitterspeak :show-front-frame t (animation nframe)
+(define-kitterspeak :show-front-frame t (animator nframe)
   "Shows frame number NFRAME on layer FRONT."
-  (let ((frame (nth nframe (children current-shape))))
-    (draw-frame animation frame :front)))
+  (let ((frame (nth nframe (children shape))))
+    (draw-frame animator frame :front)))
 
 ;; 24 - :SHOW-FG-FRAME
 
-(define-kitterspeak :show-fg-frame t (animation nframe)
+(define-kitterspeak :show-fg-frame t (animator nframe)
   "Shows frame number NFRAME on layer FG."
-  (let ((frame (nth nframe (children current-shape))))
-    (draw-frame animation frame :fg)))
+  (let ((frame (nth nframe (children shape))))
+    (draw-frame animator frame :fg)))
 
 ;; 31 - :MOVE-FORWARD
 
@@ -337,28 +395,77 @@ in case of :STOP, or until the timer fires next time, in case of delays)."
 
 ;; 4 - :JUMP
 
-(define-kitterspeak :jump t (animation nstep)
+(define-kitterspeak :jump t (animator nstep)
   "Jumps to step N."
   (setf current-step (1- nstep)))
 
 ;; 12 - :STOP
 
-(define-kitterspeak :stop nil (animation)
+(define-kitterspeak :stop nil (animator)
   "Stops Kitterspeak execution. If *KITTERSPEAK-STOP-DELAY* is set, executes
 a delay defined by that variable instead."
   (when-let ((delay *kitterspeak-stop-delay*))
-    (execute-step animation :delay delay 0)))
+    (execute-step animator :delay delay 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Offset - set
 
 ;; 5 - :FRAME-X
 
-;; TODO
+(define-kitterspeak :frame-x t (animator offset)
+  "Overrides the X offset for all frames."
+  (setf x-override offset))
 
 ;; 6 - :FRAME-Y
 
+(define-kitterspeak :frame-y t (animator offset)
+  "Overrides the X offset for all frames."
+  (setf y-override offset))
+
+;; 17 - :OPACITY
+
+(define-kitterspeak :opacity t (animator opacity)
+  "Overrides the X offset for all frames."
+  ;; TODO implement OPACITY-OVERRIDE in main code
+  (setf opacity-override
+        (if (<= 0 opacity 255) opacity 255)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Offset - slide
+
+;; 18 - :SLIDE-FRAME-X
+
 ;; TODO
+
+;; 19 - :SLIDE-FRAME-Y
+
+;; TODO
+
+;; 22 - :SLIDE-OPACITY
+
+;; TODO
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Legacy rules
+
+;; 1 - :SHOW-FRAME
+
+(define-kitterspeak :show-behind-frame t (animator nframe)
+  "Shows frame number NFRAME on layer BEHIND.
+Legacy - replaced by :SHOW-BEHIND-FRAME."
+  ;; TODO
+  )
+
+;; 9 - :DRAW-FRONT
+
+;; TODO
+
+;; 10 - :DRAW-BEHIND
+
+;; TODO
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Not implemented
 
 ;; 7 - :FURRE-X
 
@@ -372,21 +479,6 @@ Not implemented.")
   "Set furre's Y offset.
 Not implemented.")
 
-;; 17 - :OPACITY
-
-;; TODO
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Offset - slide
-
-;; 18 - :SLIDE-FRAME-X
-
-;; TODO
-
-;; 19 - :SLIDE-FRAME-Y
-
-;; TODO
-
 ;; 20 - :SLIDE-FURREX
 
 (define-kitterspeak :slide-furre-x t ()
@@ -399,46 +491,17 @@ Not implemented.")
   "Slide furre's X offset.
 Not implemented.")
 
-;; 22 - :SLIDE-OPACITY
-
-;; TODO
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Camera control
-
 ;; 13 - :CAMERA-FOLLOW-FURRE-P
 
 (define-kitterspeak :camera-follow-furre-p t ()
   "Sets if the camera should follow furre position.
 Not implemented.")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Effect layer
-
 ;; 33 - :EFFECT-LAYER-MODE
 
 (define-kitterspeak :effect-layer-mode t ()
   "Sets if effect frames should wrap shape frames or be wrapped by them.
 Not implemented.")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Legacy rules
-
-;; 1 - :SHOW-FRAME
-
-(define-kitterspeak :show-behind-frame t (animation nframe)
-  "Shows frame number NFRAME on layer BEHIND.
-Legacy - replaced by :SHOW-BEHIND-FRAME."
-  (let ((frame (nth nframe (children current-shape))))
-    (draw-frame animation frame :behind)))
-
-;; 9 - :DRAW-FRONT
-
-;; TODO
-
-;; 10 - :DRAW-BEHIND
-
-;; TODO
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Hic sunt dracones
