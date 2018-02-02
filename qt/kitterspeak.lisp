@@ -6,136 +6,25 @@
 (in-package :fox5/qt)
 (in-readtable :qtools)
 
-;; Utilities
-
-(defmacro finalize-when (object)
-  (with-gensyms (gensym)
-    `(let ((,gensym ,object))
-       (when ,gensym (finalize ,gensym)))))
-
-;; N-timer
-
-(define-widget n-timer (qtimer)
-  ((shots :accessor shots
-          :initarg :shots
-          :initform 0)
-   (end-thunk :accessor end-thunk
-              :initarg :end-thunk
-              :initform (constantly t))))
-
-(define-slot (n-timer fired) ()
-  (declare (connected n-timer (timeout)))
-  (when (>= 0 (decf shots))
-    (q+:stop n-timer)
-    (funcall end-thunk)))
-
-;; Seq-timer
-
-(define-widget seq-timer (qtimer)
-  ((loopp :accessor loopp
-          :initarg :loopp
-          :initform nil)
-   (delays :accessor delays
-           :initarg :delays
-           :initform '())
-   (original-delays :accessor original-delays)
-   (end-thunk :accessor end-thunk
-              :initarg :end-thunk
-              :initform (constantly t))))
-
-(defmethod initialize-instance :after ((timer seq-timer) &key)
-  (with-slots-bound (timer seq-timer)
-    (setf (q+:single-shot timer) t
-          original-delays delays)))
-
-(defmethod start ((timer seq-timer))
-  (with-slots-bound (timer seq-timer)
-    (cond
-      ((not (null delays))
-       (q+:start timer (pop delays)))
-      (loopp
-       (setf delays original-delays)
-       (q+:start timer (pop delays)))
-      (t
-       (funcall end-thunk)))))
-
-(define-slot (seq-timer fired) ()
-  (declare (connected seq-timer (timeout)))
-  (start seq-timer))
-
-;;; simple test
-
-(define-widget n-timer-testbox (qwidget)
-  ((n-timer :initform (make-instance
-                       'n-timer
-                       :shots 10
-                       :end-thunk (curry #'print "n-timer done")))
-   (seq-timer :initform (make-instance
-                         'seq-timer
-                         :loopp nil
-                         :delays '(1000 500 0)
-                         :end-thunk (curry #'print "seq-timer done")))))
-
-(define-subwidget (n-timer-testbox layout) (q+:make-qvboxlayout)
-  (setf (q+:layout n-timer-testbox) layout))
-
-(define-slot (n-timer-testbox add-button) ()
-  (declare (connected n-timer (timeout)))
-  (let ((name (format nil "n-timer shots left: ~D" (shots n-timer))))
-    (q+:add-widget layout (q+:make-qpushbutton name))))
-
-(define-slot (n-timer-testbox add-seq-button) ()
-  (declare (connected seq-timer (timeout)))
-  (let ((name (format nil "seq-timer")))
-    (q+:add-widget layout (q+:make-qpushbutton name))))
-
-(defun test-n-timer ()
-  (with-main-window (main-window 'n-timer-testbox)
-    (with-slots-bound (main-window n-timer-testbox)
-      (q+:start n-timer 300)
-      (start seq-timer))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ;;; Widget
 
 (define-widget animator (qwidget)
-  ((shape :accessor shape
+  (;; Shape and color code for remapping
+   (shape :accessor shape
           :initarg :shape
-          :initform 0)
+          :initform nil)
+   (color-code :accessor color-code
+               :initarg :color-code
+               :initform nil)
+   ;; Layers
+   (frame-layers :reader frame-layers
+                 ;; TODO will we need this now that we have the item group?
+                 :initform (make-array 4 :initial-element nil))
+   (layers :reader layers
+           :initform (make-array 8 :initial-element nil))
+   ;; Animation state
+   (group :accessor group
+          :initform nil)
    (current-step :accessor current-step
                  :initform 0)
    (delay-min :accessor delay-min
@@ -143,28 +32,7 @@
    (delay-max :accessor delay-max
               :initform 0)
    (auto-delay-p :accessor auto-delay-p
-                 :initform t)
-   (color-code :accessor color-code
-               :initarg :color-code
-               :initform nil)
-   (scene :reader scene
-          :initform (q+:make-qgraphicsscene))
-   (frame-layers :reader frame-layers
-                 :initform (make-array 4 :initial-element nil))
-   (layers :reader layers
-           :initform (make-array 8 :initial-element nil))
-   (x-override :accessor x-override
-               :initform nil)
-   (y-override :accessor y-override
-               :initform nil)
-   (opacity-override :accessor opacity-override
-                     :initform nil)
-   (x-timer :accessor x-timer
-            :initform nil)
-   (y-timer :accessor y-timer
-            :initform nil)
-   (opacity-timer :accessor opacity-timer
-                  :initform nil))
+                 :initform t))
   (:documentation "A widget capable of displaying animated FOX5 shapes.
 LAYERS is an eight-element array that is meant to contain the currently ~
 displayed items, generated from sprites. The ordering is:
@@ -177,17 +45,31 @@ displayed items, generated from sprites. The ordering is:
 6: front, data
 7: FG, data"))
 
+(define-subwidget (animator scene) (q+:make-qgraphicsscene))
+
+(define-subwidget (animator x-animation)
+    (q+:make-qpropertyanimation group "x"))
+
+(define-subwidget (animator y-animation)
+    (q+:make-qpropertyanimation group "y"))
+
+(define-subwidget (animator opacity) (q+:make-qgraphicsopacityeffect)
+  (setf (q+:opacity opacity) 1))
+
+(define-subwidget (animator a-animation)
+    (q+:make-qpropertyanimation opacity "opacity"))
+
 (define-finalizer (animator finalize-animator)
-  (finalize (scene animator))
-  (finalize-when (slide-x-animation animator))
-  (finalize-when (slide-y-animation animator))
-  (finalize-when (slide-opacity-animation animator)))
+  (finalize scene)
+  (finalize x-animation)
+  (finalize y-animation)
+  (finalize a-animation))
 
 (define-subwidget (animator layout) (q+:make-qgridlayout)
   (setf (q+:layout animator) layout
         (q+:contents-margins layout) (values 0 0 0 0)))
 
-(define-subwidget (animator preview) (q+:make-qgraphicsview (scene animator))
+(define-subwidget (animator preview) (q+:make-qgraphicsview scene)
   (q+:add-widget layout preview 0 0 1 2)
   (setf (q+:row-stretch layout 0) 9001))
 
@@ -208,6 +90,11 @@ displayed items, generated from sprites. The ordering is:
         (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
 
 ;;; Functions
+
+(defun ensure-group (animator)
+  (with-slots-bound (animator animator)
+    (unless group
+      (setf group (q+:make-qgraphicsitemgroup)))))
 
 (defun update (animator)
   (with-slots-bound (animator animator)
@@ -230,8 +117,8 @@ displayed items, generated from sprites. The ordering is:
   (with-slots-bound (animator animator)
     (let* ((shadow-index (ecase layer (:bg 0) (:behind 1) (:front 2) (:fg 3)))
            (data-index (+ shadow-index 4))
-           (x-offset (or x-override (getf (frame-offset frame) :x)))
-           (y-offset (or y-override (getf (frame-offset frame) :y))))
+           (x-offset (getf (frame-offset frame) :x))
+           (y-offset (getf (frame-offset frame) :y)))
       ;; remove frame from layers and frame-layers
       (loop for frame-layer across frame-layers
             for i from 0
@@ -414,21 +301,22 @@ a delay defined by that variable instead."
 
 (define-kitterspeak :frame-x t (animator offset)
   "Overrides the X offset for all frames."
-  (setf x-override offset))
+  ;; TODO
+  )
 
 ;; 6 - :FRAME-Y
 
 (define-kitterspeak :frame-y t (animator offset)
   "Overrides the X offset for all frames."
-  (setf y-override offset))
+  ;; TODO
+  )
 
 ;; 17 - :OPACITY
 
 (define-kitterspeak :opacity t (animator opacity)
   "Overrides the X offset for all frames."
-  ;; TODO implement OPACITY-OVERRIDE in main code
-  (setf opacity-override
-        (if (<= 0 opacity 255) opacity 255)))
+  ;; TODO
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Offset - slide
