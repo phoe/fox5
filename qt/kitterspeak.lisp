@@ -307,14 +307,14 @@ a delay defined by that variable instead."
 ;; 6 - :FRAME-Y
 
 (define-kitterspeak :frame-y t (animator offset)
-  "Overrides the X offset for all frames."
+  "Overrides the Y offset for all frames."
   ;; TODO
   )
 
 ;; 17 - :OPACITY
 
 (define-kitterspeak :opacity t (animator opacity)
-  "Overrides the X offset for all frames."
+  "Overrides the total opacity of the image."
   ;; TODO
   )
 
