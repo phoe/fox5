@@ -6,6 +6,14 @@
 (in-package :fox5/qt)
 (in-readtable :qtools)
 
+;;; Utils
+
+(defun make-text-qtoolbutton (text)
+  (let ((button (q+:make-qtoolbutton)))
+    (setf (q+:text button) text
+          (q+:tool-button-style button) (q+:qt.tool-button-text-only))
+    button))
+
 ;;; Widget
 
 (define-widget animator (qwidget)
@@ -18,21 +26,21 @@
                :initform nil)
    ;; Layers
    (frame-layers :reader frame-layers
-                 ;; TODO will we need this now that we have the item group?
                  :initform (make-array 4 :initial-element nil))
    (layers :reader layers
            :initform (make-array 8 :initial-element nil))
    ;; Animation state
-   (group :accessor group
-          :initform nil)
    (current-step :accessor current-step
                  :initform 0)
-   (delay-min :accessor delay-min
-              :initform 0)
-   (delay-max :accessor delay-max
-              :initform 0)
-   (auto-delay-p :accessor auto-delay-p
-                 :initform t))
+   ;; (group :accessor group
+   ;;        :initform nil)
+   ;; (delay-min :accessor delay-min
+   ;;            :initform 0)
+   ;; (delay-max :accessor delay-max
+   ;;            :initform 0)
+   ;; (auto-delay-p :accessor auto-delay-p
+   ;;               :initform t)
+   )
   (:documentation "A widget capable of displaying animated FOX5 shapes.
 LAYERS is an eight-element array that is meant to contain the currently ~
 displayed items, generated from sprites. The ordering is:
@@ -47,23 +55,24 @@ displayed items, generated from sprites. The ordering is:
 
 (define-subwidget (animator scene) (q+:make-qgraphicsscene))
 
-(define-subwidget (animator x-animation)
-    (q+:make-qpropertyanimation group "x"))
+;; (define-subwidget (animator x-animation)
+;;     (q+:make-qpropertyanimation group "x"))
 
-(define-subwidget (animator y-animation)
-    (q+:make-qpropertyanimation group "y"))
+;; (define-subwidget (animator y-animation)
+;;     (q+:make-qpropertyanimation group "y"))
 
-(define-subwidget (animator opacity) (q+:make-qgraphicsopacityeffect)
-  (setf (q+:opacity opacity) 1))
+;; (define-subwidget (animator opacity) (q+:make-qgraphicsopacityeffect)
+;;   (setf (q+:opacity opacity) 1))
 
-(define-subwidget (animator a-animation)
-    (q+:make-qpropertyanimation opacity "opacity"))
+;; (define-subwidget (animator a-animation)
+;;     (q+:make-qpropertyanimation opacity "opacity"))
 
 (define-finalizer (animator finalize-animator)
   (finalize scene)
-  (finalize x-animation)
-  (finalize y-animation)
-  (finalize a-animation))
+  ;; (finalize x-animation)
+  ;; (finalize y-animation)
+  ;; (finalize a-animation)
+  )
 
 (define-subwidget (animator layout) (q+:make-qgridlayout)
   (setf (q+:layout animator) layout
@@ -73,28 +82,22 @@ displayed items, generated from sprites. The ordering is:
   (q+:add-widget layout preview 0 0 1 2)
   (setf (q+:row-stretch layout 0) 9001))
 
-(defun make-text-qtoolbutton (text)
-  (let ((button (q+:make-qtoolbutton)))
-    (setf (q+:text button) text
-          (q+:tool-button-style button) (q+:qt.tool-button-text-only))
-    button))
+;; (define-subwidget (animator prev-button) (make-text-qtoolbutton "<")
+;;   (q+:add-widget layout prev-button 1 0)
+;;   (setf (q+:size-policy prev-button)
+;;         (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
 
-(define-subwidget (animator prev-button) (make-text-qtoolbutton "<")
-  (q+:add-widget layout prev-button 1 0)
-  (setf (q+:size-policy prev-button)
-        (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
-
-(define-subwidget (animator next-button) (make-text-qtoolbutton ">")
-  (q+:add-widget layout next-button 1 1)
-  (setf (q+:size-policy next-button)
-        (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
+;; (define-subwidget (animator next-button) (make-text-qtoolbutton ">")
+;;   (q+:add-widget layout next-button 1 1)
+;;   (setf (q+:size-policy next-button)
+;;         (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
 
 ;;; Functions
 
-(defun ensure-group (animator)
-  (with-slots-bound (animator animator)
-    (unless group
-      (setf group (q+:make-qgraphicsitemgroup)))))
+;; (defun ensure-group (animator)
+;;   (with-slots-bound (animator animator)
+;;     (unless group
+;;       (setf group (q+:make-qgraphicsitemgroup)))))
 
 (defun update (animator)
   (with-slots-bound (animator animator)
@@ -107,11 +110,13 @@ displayed items, generated from sprites. The ordering is:
 (defun draw-shape (animator shape)
   (setf (shape animator) shape)
   (with-slots-bound (animator animator)
-    (if (kitterspeak shape)
-        (execute-kitterspeak animator)
-        (draw-frame animator (first (children shape)) :behind)
-        ;; TODO in case of effect shapes, the default layer is :FRONT
-        )))
+    (cond
+      ((kitterspeak shape)
+       (execute-kitterspeak animator))
+      ((eq (edit-type (parent shape)) :effect)
+       (draw-frame animator (first (children shape)) :front))
+      (t
+       (draw-frame animator (first (children shape)) :behind)))))
 
 (defun draw-frame (animator frame layer)
   (with-slots-bound (animator animator)
@@ -120,14 +125,14 @@ displayed items, generated from sprites. The ordering is:
            (x-offset (getf (frame-offset frame) :x))
            (y-offset (getf (frame-offset frame) :y)))
       ;; remove frame from layers and frame-layers
-      (loop for frame-layer across frame-layers
-            for i from 0
-            if (eq frame-layer frame)
-              do (setf (aref frame-layers i) nil
-                       (aref layers i) nil
-                       (aref layers (+ 4 i)) nil))
+      ;; (loop for frame-layer across frame-layers
+      ;;       for i from 0
+      ;;       if (eq frame-layer frame)
+      ;;         do (setf (aref frame-layers i) nil
+      ;;                  (aref layers i) nil
+      ;;                  (aref layers (+ 4 i)) nil))
       ;; add frame to frame-layers
-      (setf (aref frame-layers shadow-index) frame)
+      ;; (setf (aref frame-layers shadow-index) frame)
       ;; add items to layers
       (dolist (sprite (children frame))
         (let ((item (sprite-item sprite color-code x-offset y-offset)))
@@ -338,7 +343,7 @@ a delay defined by that variable instead."
 
 ;; 1 - :SHOW-FRAME
 
-(define-kitterspeak :show-behind-frame t (animator nframe)
+(define-kitterspeak :show-frame t (animator nframe)
   "Shows frame number NFRAME on layer BEHIND.
 Legacy - replaced by :SHOW-BEHIND-FRAME."
   ;; TODO
