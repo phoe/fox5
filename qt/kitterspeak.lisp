@@ -180,8 +180,6 @@ that will pass before KS execution is restarted from the beginning.")
     (with-accessors ((kitterspeak kitterspeak)) shape
       (when kitterspeak
         ;; TODO turn kitterspeak into array one day
-        ;; (when (null (nth current-step kitterspeak))
-        ;;   (setf current-step 0))
         (loop repeat *max-kitterspeak-steps*
               for step = (nth current-step kitterspeak)
               for (type arg1 arg2) = step
@@ -199,6 +197,11 @@ that will pass before KS execution is restarted from the beginning.")
 Must return non-NIL if the execution is meant to be continued after this step,
 or NIL if it should be paused."))
 
+(defmacro check-kitterspeak-type (type)
+  "Checks if the provided symbol is a valid Kitterspeak type."
+  `(when ,type (assert (member ,type *kitterspeak* :key #'cdr) ()
+                       "~S is not a valid Kitterspeak type." ,type)))
+
 (defmacro define-kitterspeak
     (type (&optional (animator 'animator) (arg1 'arg1) (arg2 'arg2))
      &body body)
@@ -206,16 +209,16 @@ or NIL if it should be paused."))
 states if Kitterspeak processing should continue after the body of this method
 \(in case of most steps), or if it should pause (forever, in case of :STOP, or
 until the timer fires next time, in case of delays)."
-  (when type (assert (member type *kitterspeak* :key #'cdr) ()
-                     "~S is not a valid Kitterspeak type." type))
-  `(defmethod execute-step
-       ((,animator animator) (type (eql ,type)) ,arg1 ,arg2)
-     ,@(if (and body (stringp (first body)))
-           `(,(car body)
-             (with-slots-bound (,animator animator)
-               ,@(cdr body)))
-           `(with-slots-bound (,animator animator)
-              ,@body))))
+  `(progn
+     (check-kitterspeak-type ,type)
+     (defmethod execute-step
+         ((,animator animator) (type (eql ,type)) ,arg1 ,arg2)
+       ,@(if (and body (stringp (first body)))
+             `(,(car body)
+               (with-slots-bound (,animator animator)
+                 ,@(cdr body)))
+             `(with-slots-bound (,animator animator)
+                ,@body)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Null case
