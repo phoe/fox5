@@ -38,8 +38,8 @@
                    :initform 0)
    (auto-delay-max :accessor auto-delay-max
                    :initform 0)
-   (auto-delay-p :accessor auto-delay-p
-                 :initform t))
+   (loop-counters :accessor loop-counters
+                  :initform (make-hash-table)))
   (:documentation "A widget capable of displaying animated FOX5 shapes.
 LAYERS is an eight-element array that is meant to contain the currently ~
 displayed items, generated from sprites. The ordering is:
@@ -101,6 +101,9 @@ displayed items, generated from sprites. The ordering is:
 (defun update (animator)
   (with-slots-bound (animator animator)
     ;; TODO optimize
+    ;;(loop for item in (q+:items scene) do (q+:remove-item scene item))
+    (loop for item in (q+:items scene)
+          when (not (find item layers)) do (finalize item))
     ;; TODO multiple shadows will not get drawn correctly because 0.5 dark
     ;; opacity * 0.5 dark opacity will turn into 0.75 dark opacity, not 0.5
     (loop for item across layers when item do (q+:add-item scene item))))
@@ -180,13 +183,22 @@ that will pass before KS execution is restarted from the beginning.")
     (with-accessors ((kitterspeak kitterspeak)) shape
       (when kitterspeak
         ;; TODO turn kitterspeak into array one day
-        (loop repeat *max-kitterspeak-steps*
-              for step = (nth current-step kitterspeak)
-              for (type arg1 arg2) = step
-              for continuep = (funcall #'execute-step animator type arg1 arg2)
-              do (incf current-step)
-              unless continuep
-                return nil)
+        (loop
+          repeat *max-kitterspeak-steps*
+          for step = (nth current-step kitterspeak)
+          for (type arg1 arg2) = step
+          for continuep = (funcall #'execute-step animator type arg1 arg2)
+          for next = (nth (1+ current-step) kitterspeak)
+          do (incf current-step)
+          when (member type '(:show-bg-frame :show-behind-frame
+                              :show-front-frame :show-fg-frame
+                              :show-frame))
+            unless (member (car next) '(:delay :random-delay))
+              do (execute-step animator :random-delay
+                               auto-delay-min auto-delay-max)
+                 (return nil)
+          unless continuep
+            return nil)
         (update animator)))))
 
 (define-slot (animator execute-kitterspeak) ()
@@ -237,7 +249,7 @@ until the timer fires next time, in case of delays)."
 
 (define-kitterspeak :show-bg-frame (animator nframe)
   "Shows frame number NFRAME on layer BG."
-  (let ((frame (nth nframe (children shape))))
+  (when-let ((frame (nth nframe (children shape))))
     (draw-frame animator frame :bg))
   t)
 
@@ -245,7 +257,7 @@ until the timer fires next time, in case of delays)."
 
 (define-kitterspeak :show-behind-frame (animator nframe)
   "Shows frame number NFRAME on layer BEHIND."
-  (let ((frame (nth nframe (children shape))))
+  (when-let ((frame (nth nframe (children shape))))
     (draw-frame animator frame :behind))
   t)
 
@@ -253,7 +265,7 @@ until the timer fires next time, in case of delays)."
 
 (define-kitterspeak :show-front-frame (animator nframe)
   "Shows frame number NFRAME on layer FRONT."
-  (let ((frame (nth nframe (children shape))))
+  (when-let ((frame (nth nframe (children shape))))
     (draw-frame animator frame :front))
   t)
 
@@ -261,7 +273,7 @@ until the timer fires next time, in case of delays)."
 
 (define-kitterspeak :show-fg-frame (animator nframe)
   "Shows frame number NFRAME on layer FG."
-  (let ((frame (nth nframe (children shape))))
+  (when-let ((frame (nth nframe (children shape))))
     (draw-frame animator frame :fg))
   t)
 
@@ -289,21 +301,38 @@ until the timer fires next time, in case of delays)."
   "Delays Kitterspeak execution for a random amount of time between X and Y
 milliseconds."
   (let* ((diff (1+ (- msec2 msec1)))
-         (time (if (positive-real-p diff) (+ msec1 (random diff)) 0)))
+         (sum (+ msec1 (random diff)))
+         (time (if (positive-real-p sum) sum 0)))
     (execute-step animator :delay time 0))
   nil)
 
-;; 11 - :AUTO-FRAME-DELAY
+;; 11 - :AUTO-DELAY
 
-;; TODO
+(define-kitterspeak :auto-delay (animator msec)
+  "Sets the automatic delay to the following value."
+  (setf auto-delay-min msec auto-delay-max msec)
+  t)
 
 ;; 14 - :RANDOM-AUTO-DELAY
 
-;; TODO
+(define-kitterspeak :random-auto-delay (animator min max)
+  "Sets the random automatic delay to the following values."
+  (setf auto-delay-min min auto-delay-max max)
+  t)
 
 ;; 3 - :LOOP
 
-;; TODO
+(define-kitterspeak :loop (animator nstep count)
+  "Loops to step NSTEP COUNT times, then continues."
+  (let ((current (ensure-gethash current-step loop-counters 0)))
+    (cond ((<= count current)
+           ;;(format t "Not jumping.~%")
+           (setf (gethash current-step loop-counters) 0))
+          (t
+           ;;(format t "Jumping.~%")
+           (incf (gethash current-step loop-counters))
+           (execute-step animator :jump nstep 0))))
+  t)
 
 ;; 4 - :JUMP
 

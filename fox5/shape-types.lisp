@@ -79,7 +79,9 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
 
 ;;; Print definitions
 
-(define-print (object stream) (princ (edit-type object) stream))
+(define-print (object stream)
+  (princ (edit-type object) stream)
+  (format stream "~^ (~A)" (name object)))
 
 (define-print (shape stream) (princ (shape-type shape) stream))
 

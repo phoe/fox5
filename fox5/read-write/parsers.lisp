@@ -61,17 +61,13 @@ requires a slightly different technique."
                  for command = (code-char (readu8-be buffer))
                  if (eql command (code-char #x3C))
                    do (incf i)
-                      (setf (parent *current-object*) *parent-object*)
                       (unless *parent-object* (return *current-object*))
+                      (setf (parent *current-object*) *parent-object*)
                       (push *current-object* (children *parent-object*))
                       (setf *current-object* (make-instance class))
                       (when (= i count) (return))
                  else do (read-command command buffer))
-      (setf (children *current-object*)
-            (nreverse (children *current-object*))))))
-
-(define-fox5-reader (#x3C buffer)
-  (error "Unexpected #x3C (#\<) encountered when reading."))
+      (when *parent-object* (nreversef (children *parent-object*))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; File commands
