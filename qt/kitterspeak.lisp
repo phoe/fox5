@@ -43,7 +43,29 @@
    ;; (active-legacy-frame :accessor active-legacy-frame
    ;;                      :initform :behind)
    (execute-kitterspeak-p :accessor execute-kitterspeak-p
-                          :initform t))
+                          :initform t)
+   ;; X animation
+   (x-start :accessor x-start
+            :initform 0)
+   (x-end :accessor x-end
+          :initform 0)
+   (x-value :accessor x-value
+            :initform nil)
+   (x-start-time :accessor x-start-time
+                 :initform 0)
+   (x-duration :accessor x-end-time
+               :initform 0)
+   ;; Y animation
+   (y-start :accessor y-start
+            :initform 0)
+   (y-end :accessor y-end
+          :initform 0)
+   (y-value :accessor y-value
+            :initform nil)
+   (y-start-time :accessor y-start-time
+                 :initform 0)
+   (y-duration :accessor y-end-time
+               :initform 0))
   (:documentation "A widget capable of displaying animated FOX5 shapes.
 LAYERS is an eight-element array that is meant to contain the currently ~
 displayed items, generated from sprites. The ordering is:
@@ -58,11 +80,35 @@ displayed items, generated from sprites. The ordering is:
 
 (define-subwidget (animator scene) (q+:make-qgraphicsscene))
 
-;; (define-subwidget (animator x-animation)
-;;     (q+:make-qpropertyanimation group "x"))
+(defparameter *timer-interval* 16)
 
-;; (define-subwidget (animator y-animation)
-;;     (q+:make-qpropertyanimation group "y"))
+(define-subwidget (animator x-timer) (q+:make-qtimer)
+  (setf (q+:interval x-timer) *timer-interval*))
+
+(define-slot (animator update-x-animation) ()
+  (declare (connected x-timer (timeout)))
+  (let* ((now (get-internal-real-time))
+         (diff (/ (* (- now x-start-time) 1000) internal-time-units-per-second))
+         (percentage (min 1 (/ diff x-duration)))
+         (x (round (lerp percentage x-start x-end))))
+    (setf x-value x)
+    (loop for item across layers when item do (setf (q+:x item) x))
+    (unless (= percentage 1)
+      (q+:start x-timer))))
+
+(define-subwidget (animator y-timer) (q+:make-qtimer)
+  (setf (q+:interval y-timer) *timer-interval*))
+
+(define-slot (animator update-y-animation) ()
+  (declare (connected y-timer (timeout)))
+  (let* ((now (get-internal-real-time))
+         (diff (/ (* (- now y-start-time) 1000) internal-time-units-per-second))
+         (percentage (min 1 (/ diff y-duration)))
+         (y (round (lerp percentage y-start y-end))))
+    (setf y-value y)
+    (loop for item across layers when item do (setf (q+:y item) y))
+    (unless (= percentage 1)
+      (q+:start y-timer))))
 
 ;; (define-subwidget (animator opacity) (q+:make-qgraphicsopacityeffect)
 ;;   (setf (q+:opacity opacity) 1))
@@ -118,11 +164,13 @@ displayed items, generated from sprites. The ordering is:
               do (q+:add-item scene item)
                  (setf (q+:zvalue item) i)))))
 
+(defun legacy-layer (shape)
+  (if (eq (edit-type (parent shape)) :effect) :front :behind))
+
 (defun draw-shape (animator shape)
   (setf (shape animator) shape)
   (with-slots-bound (animator animator)
-    (let ((layer (if (eq (edit-type (parent shape)) :effect) :front :behind)))
-      (draw-frame animator (first (children shape)) layer))
+    (draw-frame animator (first (children shape)) (legacy-layer shape))
     (when (kitterspeak shape)
       (execute-kitterspeak animator))))
 
@@ -519,14 +567,28 @@ a delay defined by that variable instead."
 
 (define-kitterspeak :slide-frame-x (animator offset msec)
   "Overrides the X offset for all frames."
-  ;; TODO
+  (let* ((layer (legacy-layer shape))
+         (item (aref layers (ecase layer (:behind 5) (:front 6))))
+         (start (or x-value (when item (q+:x item) 0))))
+    (setf x-start start
+          x-end offset
+          x-start-time (get-internal-real-time)
+          x-duration msec)
+    (q+:start x-timer))
   t)
 
 ;; 19 - :SLIDE-FRAME-Y
 
 (define-kitterspeak :slide-frame-y (animator offset msec)
   "Overrides the Y offset for all frames."
-  ;; TODO
+  (let* ((layer (legacy-layer shape))
+         (item (aref layers (ecase layer (:behind 5) (:front 6))))
+         (start (or y-value (when item (q+:y item) 0))))
+    (setf y-start start
+          y-end offset
+          y-start-time (get-internal-real-time)
+          y-duration msec)
+    (q+:start y-timer))
   t)
 
 ;; 22 - :SLIDE-OPACITY
