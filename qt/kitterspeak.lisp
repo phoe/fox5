@@ -39,7 +39,11 @@
    (auto-delay-max :accessor auto-delay-max
                    :initform 0)
    (loop-counters :accessor loop-counters
-                  :initform (make-hash-table)))
+                  :initform (make-hash-table))
+   ;; (active-legacy-frame :accessor active-legacy-frame
+   ;;                      :initform :behind)
+   (execute-kitterspeak-p :accessor execute-kitterspeak-p
+                          :initform t))
   (:documentation "A widget capable of displaying animated FOX5 shapes.
 LAYERS is an eight-element array that is meant to contain the currently ~
 displayed items, generated from sprites. The ordering is:
@@ -100,24 +104,27 @@ displayed items, generated from sprites. The ordering is:
 
 (defun update (animator)
   (with-slots-bound (animator animator)
-    ;; TODO optimize
-    ;;(loop for item in (q+:items scene) do (q+:remove-item scene item))
-    (loop for item in (q+:items scene)
-          when (not (find item layers)) do (finalize item))
-    ;; TODO multiple shadows will not get drawn correctly because 0.5 dark
-    ;; opacity * 0.5 dark opacity will turn into 0.75 dark opacity, not 0.5
-    (loop for item across layers when item do (q+:add-item scene item))))
+    (let ((items (q+:items scene)))
+      ;; TODO optimize
+      (dolist (item items)
+        (unless (find item layers)
+          (finalize item)))
+      ;; TODO compress shadows into one group and apply an opacity effect to it.
+      ;; multiple shadows will not get drawn correctly because 0.5 dark
+      ;; opacity * 0.5 dark opacity will turn into 0.75 dark opacity, not 0.5
+      (loop for item across layers
+            for i from 0
+            when item unless (find item items)
+              do (q+:add-item scene item)
+                 (setf (q+:zvalue item) i)))))
 
 (defun draw-shape (animator shape)
   (setf (shape animator) shape)
   (with-slots-bound (animator animator)
-    (cond
-      ((kitterspeak shape)
-       (execute-kitterspeak animator))
-      ((eq (edit-type (parent shape)) :effect)
-       (draw-frame animator (first (children shape)) :front))
-      (t
-       (draw-frame animator (first (children shape)) :behind)))))
+    (let ((layer (if (eq (edit-type (parent shape)) :effect) :front :behind)))
+      (draw-frame animator (first (children shape)) layer))
+    (when (kitterspeak shape)
+      (execute-kitterspeak animator))))
 
 (defun draw-frame (animator frame layer)
   (with-slots-bound (animator animator)
@@ -143,15 +150,13 @@ displayed items, generated from sprites. The ordering is:
              (when-let ((item (aref layers data-index)))
                (finalize item))
              ;; set new contents
-             (setf (aref layers data-index) item
-                   (q+:zvalue item) (- 8 data-index)))
+             (setf (aref layers data-index) item))
             ((:shadow-layer)
              ;; delete any former contents of the frame
              (when-let ((item (aref layers shadow-index)))
                (finalize item))
              ;; set new contents
              (setf (aref layers shadow-index) item
-                   (q+:zvalue item) (- 8 shadow-index)
                    (q+:opacity item) 0.5))))))))
 
 ;; TODO https://stackoverflow.com/questions/7451183/
@@ -181,7 +186,9 @@ that will pass before KS execution is restarted from the beginning.")
   "Begins Kitterspeak execution in the provided animator."
   (with-slots-bound (animator animator)
     (with-accessors ((kitterspeak kitterspeak)) shape
-      (when kitterspeak
+      (analyze-kitterspeak animator)
+      (when (and kitterspeak execute-kitterspeak-p)
+        ;; TODO optimize simple kitterspeak use cases
         ;; TODO turn kitterspeak into array one day
         (loop
           repeat *max-kitterspeak-steps*
@@ -201,7 +208,42 @@ that will pass before KS execution is restarted from the beginning.")
             return nil)
         (update animator)))))
 
+(defvar *kitterspeak-ignored-keywords*
+  '(:furre-x :furre-y :slide-furre-x :slide-furre-y :camera-follow-furre-p
+    :effect-layer-mode :shape-frame :show-bg-object :show-fg-object :hide-bg
+    :hide-fg)
+  "Kitterspeak rule types that are ignored by the implementation.")
+
+(defvar *kitterspeak-execute-once-keywords*
+  `(,@*kitterspeak-ignored-keywords*
+    ,@'(:show-bg-frame :show-behind-frame :show-front-frame :show-fg-frame
+        :move-forward :move-backward :loop :jump :frame-x :frame-y :opacity
+        :show-frame :draw-front :draw-behind))
+  "Kitterspeak rule types allowed in script that is meant to be executed once.")
+
+(defvar *kitterspeak-execute-nil-keywords*
+  `(,@*kitterspeak-ignored-keywords*
+    ,@'(:delay :random-delay :auto-delay :random-auto-delay :loop :jump :stop
+        :frame-x :frame-y :opacity))
+  "Kitterspeak rule types allowed in script that is meant not to be executed at
+all.")
+
+(defun analyze-kitterspeak (animator)
+  "Analyzes the kitterspeak for possible optimizations and sets the
+EXECUTE-KITTERSPEAK-P variable to NIL (no execution), :ONCE (execute but don't
+loop at end), and T (full execution)."
+  (with-slots-bound (animator animator)
+    (with-accessors ((kitterspeak kitterspeak)) shape
+      (let ((types (mapcar #'car kitterspeak)))
+        (cond
+          ((every (rcurry #'member *kitterspeak-execute-once-keywords*) types)
+           (setf execute-kitterspeak-p :once))
+          ((every (rcurry #'member *kitterspeak-execute-nil-keywords*) types)
+           (setf execute-kitterspeak-p nil)))))))
+
 (define-slot (animator execute-kitterspeak) ()
+  ;; TODO differentiate based on some serial, so we don't execute kitterspeak
+  ;; if the current shape differs from the one for which the slot was called
   (execute-kitterspeak animator))
 
 (defgeneric execute-step (animator type arg1 arg2)
@@ -229,8 +271,8 @@ until the timer fires next time, in case of delays)."
              `(,(car body)
                (with-slots-bound (,animator animator)
                  ,@(cdr body)))
-             `(with-slots-bound (,animator animator)
-                ,@body)))))
+             `((with-slots-bound (,animator animator)
+                 ,@body))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Null case
@@ -240,7 +282,8 @@ until the timer fires next time, in case of delays)."
 (define-kitterspeak nil (animator)
   "Null method. Called each time the Kitterspeak reaches its end. This method's
  sole purpose is to loop back to the beginning."
-  (execute-step animator :jump 0 0))
+  (unless (eq execute-kitterspeak-p :once)
+    (execute-step animator :jump 0 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Frame order
@@ -279,12 +322,105 @@ until the timer fires next time, in case of delays)."
 
 ;; 31 - :MOVE-FORWARD
 
-;; TODO
+(define-kitterspeak :move-forward (animator nframe)
+  "Moves frame NFRAME forward using the following conditions."
+  (when-let* ((frame (nth nframe (children shape)))
+              (position (position frame frame-layers)))
+    (let ((shadow-position (+ 4 position)))
+      (cond
+        ;; layer is already in the foreground - do nothing
+        ((= 3 position))
+        ;; there is free space 1 layer before us
+        ((and (>= 2 position)
+              (null (aref frame-layers (+ 1 position))))
+         (rotatef (aref layers position)
+                  (aref layers (+ 1 position)))
+         (rotatef (aref layers shadow-position)
+                  (aref layers (+ 1 shadow-position)))
+         (rotatef (aref frame-layers position)
+                  (aref frame-layers (+ 1 position))))
+        ;; there is free space 2 layers before us
+        ((and (>= 1 position)
+              (null (aref frame-layers (+ 2 position))))
+         (rotatef (aref layers position)
+                  (aref layers (+ 1 position))
+                  (aref layers (+ 2 position)))
+         (rotatef (aref layers shadow-position)
+                  (aref layers (+ 1 shadow-position))
+                  (aref layers (+ 2 shadow-position)))
+         (rotatef (aref frame-layers position)
+                  (aref frame-layers (+ 1 position))
+                  (aref frame-layers (+ 2 position))))
+        ;; there is free space 3 layers before us
+        ((and (>= 0 position)
+              (null (aref frame-layers (+ 3 position))))
+         (rotatef (aref layers position)
+                  (aref layers (+ 1 position))
+                  (aref layers (+ 2 position))
+                  (aref layers (+ 3 position)))
+         (rotatef (aref layers shadow-position)
+                  (aref layers (+ 1 shadow-position))
+                  (aref layers (+ 2 shadow-position))
+                  (aref layers (+ 3 shadow-position)))
+         (rotatef (aref frame-layers position)
+                  (aref frame-layers (+ 1 position))
+                  (aref frame-layers (+ 2 position))
+                  (aref frame-layers (+ 3 position))))
+        ;; no free space, swap layers.
+        (t
+         (rotatef (aref frame-layers position)
+                  (aref frame-layers (+ 1 position))))))))
 
 ;; 32 - :MOVE-BACKWARD
 
-;; TODO
-
+(define-kitterspeak :move-backward (animator nframe)
+  "Moves frame NFRAME backward using the following conditions."
+  (when-let* ((frame (nth nframe (children shape)))
+              (position (position frame frame-layers)))
+    (let ((shadow-position (+ 4 position)))
+      (cond
+        ;; layer is already in the background - do nothing
+        ((= 0 position))
+        ;; there is free space 1 layer after us
+        ((and (<= 1 position)
+              (null (aref frame-layers (- position 1))))
+         (rotatef (aref layers position)
+                  (aref layers (- position 1)))
+         (rotatef (aref layers shadow-position)
+                  (aref layers (- shadow-position 1)))
+         (rotatef (aref frame-layers position)
+                  (aref frame-layers (- position 1))))
+        ;; there is free space 2 layers after us
+        ((and (<= 2 position)
+              (null (aref frame-layers (- position 2))))
+         (rotatef (aref layers position)
+                  (aref layers (- position 1))
+                  (aref layers (- position 2)))
+         (rotatef (aref layers shadow-position)
+                  (aref layers (- shadow-position 1))
+                  (aref layers (- shadow-position 2)))
+         (rotatef (aref frame-layers position)
+                  (aref frame-layers (- position 1))
+                  (aref frame-layers (- position 2))))
+        ;; there is free space 3 layers after us
+        ((and (<= 3 position)
+              (null (aref frame-layers (- position 3))))
+         (rotatef (aref layers position)
+                  (aref layers (- position 1))
+                  (aref layers (- position 2))
+                  (aref layers (- position 3)))
+         (rotatef (aref layers shadow-position)
+                  (aref layers (- shadow-position 1))
+                  (aref layers (- shadow-position 2))
+                  (aref layers (- shadow-position 3)))
+         (rotatef (aref frame-layers position)
+                  (aref frame-layers (- position 1))
+                  (aref frame-layers (- position 2))
+                  (aref frame-layers (- position 3))))
+        ;; no free space, swap layers.
+        (t
+         (rotatef (aref frame-layers position)
+                  (aref frame-layers (- position 1))))))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Flow control
 
@@ -310,14 +446,16 @@ milliseconds."
 
 (define-kitterspeak :auto-delay (animator msec)
   "Sets the automatic delay to the following value."
-  (setf auto-delay-min msec auto-delay-max msec)
+  (setf auto-delay-min msec
+        auto-delay-max msec)
   t)
 
 ;; 14 - :RANDOM-AUTO-DELAY
 
 (define-kitterspeak :random-auto-delay (animator min max)
   "Sets the random automatic delay to the following values."
-  (setf auto-delay-min min auto-delay-max max)
+  (setf auto-delay-min min
+        auto-delay-max max)
   t)
 
 ;; 3 - :LOOP
@@ -326,10 +464,8 @@ milliseconds."
   "Loops to step NSTEP COUNT times, then continues."
   (let ((current (ensure-gethash current-step loop-counters 0)))
     (cond ((<= count current)
-           ;;(format t "Not jumping.~%")
            (setf (gethash current-step loop-counters) 0))
           (t
-           ;;(format t "Jumping.~%")
            (incf (gethash current-step loop-counters))
            (execute-step animator :jump nstep 0))))
   t)
@@ -347,6 +483,8 @@ milliseconds."
   "Stops Kitterspeak execution. If *KITTERSPEAK-STOP-DELAY* is set, executes
 a delay defined by that variable instead."
   (when-let ((delay *kitterspeak-stop-delay*))
+    ;; TODO better cleaning of animator state
+    (execute-step animator :jump 0 0)
     (execute-step animator :delay delay 0))
   nil)
 
@@ -379,15 +517,24 @@ a delay defined by that variable instead."
 
 ;; 18 - :SLIDE-FRAME-X
 
-;; TODO
+(define-kitterspeak :slide-frame-x (animator offset msec)
+  "Overrides the X offset for all frames."
+  ;; TODO
+  t)
 
 ;; 19 - :SLIDE-FRAME-Y
 
-;; TODO
+(define-kitterspeak :slide-frame-y (animator offset msec)
+  "Overrides the Y offset for all frames."
+  ;; TODO
+  t)
 
 ;; 22 - :SLIDE-OPACITY
 
-;; TODO
+(define-kitterspeak :slide-opacity (animator opacity msec)
+  "Overrides the total opacity of the image."
+  ;; TODO
+  t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Legacy rules
@@ -395,8 +542,6 @@ a delay defined by that variable instead."
 ;; 1 - :SHOW-FRAME
 
 (define-kitterspeak :show-frame (animator nframe)
-  "Shows frame number NFRAME on layer BEHIND.
-Legacy - replaced by :SHOW-BEHIND-FRAME."
   ;; TODO
   t)
 
