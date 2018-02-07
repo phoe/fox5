@@ -29,6 +29,10 @@
                  :initform (make-array 4 :initial-element nil))
    (layers :reader layers
            :initform (make-array 8 :initial-element nil))
+   (x-offsets :reader x-offsets
+              :initform (make-array 8 :initial-element 0))
+   (y-offsets :reader y-offsets
+              :initform (make-array 8 :initial-element 0))
    ;; Animation state
    (current-step :accessor current-step
                  :initform 0)
@@ -103,7 +107,7 @@ displayed items, generated from sprites. The ordering is:
   (setf (q+:opacity opacity) 1
         (q+:graphics-effect preview) opacity))
 
-(defparameter *timer-interval* 16)
+(defparameter *timer-interval* 10)
 
 (define-subwidget (slow-animator x-timer) (q+:make-qtimer)
   (setf (q+:interval x-timer) *timer-interval*))
@@ -117,10 +121,12 @@ displayed items, generated from sprites. The ordering is:
   (declare (connected x-timer (timeout)))
   (let* ((now (get-internal-real-time))
          (diff (/ (* (- now x-start-time) 1000) internal-time-units-per-second))
-         (percentage (min 1.0 (/ diff x-duration)))
+         (percentage (min 1.0 (/ diff (max x-duration 1))))
          (x (lerp percentage x-start x-end)))
     (setf x-value x)
-    (loop for item across layers when item do (setf (q+:x item) x))
+    (loop for item across layers
+          for offset across x-offsets
+          when item do (setf (q+:x item) (+ offset x)))
     (unless (= percentage 1.0)
       (q+:start x-timer))))
 
@@ -132,10 +138,12 @@ displayed items, generated from sprites. The ordering is:
   (let* ((now (get-internal-real-time))
          (diff (/ (* (- now y-start-time) 1000)
                   internal-time-units-per-second))
-         (percentage (min 1 (/ diff y-duration)))
+         (percentage (min 1 (/ diff (max y-duration 1))))
          (y (lerp percentage y-start y-end)))
     (setf y-value y)
-    (loop for item across layers when item do (setf (q+:y item) y))
+    (loop for item across layers
+          for offset across y-offsets
+          when item do (setf (q+:y item) (+ offset y)))
     (unless (= percentage 1)
       (q+:start y-timer))))
 
@@ -148,7 +156,7 @@ displayed items, generated from sprites. The ordering is:
   (let* ((now (get-internal-real-time))
          (diff (/ (* (- now opacity-start-time) 1000)
                   internal-time-units-per-second))
-         (percentage (min 1 (/ diff opacity-duration)))
+         (percentage (min 1 (/ diff (max opacity-duration 1))))
          (value (lerp percentage opacity-start opacity-end)))
     (setf opacity-value value)
     (loop for item across layers when item
@@ -203,8 +211,8 @@ displayed items, generated from sprites. The ordering is:
   (with-slots-bound (slow-animator slow-animator)
     (let* ((shadow-index (ecase layer (:bg 0) (:behind 1) (:front 2) (:fg 3)))
            (data-index (+ shadow-index 4))
-           (x-offset (getf (frame-offset frame) :x))
-           (y-offset (getf (frame-offset frame) :y)))
+           (x-offset (or x-value (getf (frame-offset frame) :x)))
+           (y-offset (or y-value (getf (frame-offset frame) :y))))
       ;; remove frame from layers and frame-layers
       (loop for frame-layer across frame-layers
             for i from 0
@@ -216,20 +224,25 @@ displayed items, generated from sprites. The ordering is:
       (setf (aref frame-layers shadow-index) frame)
       ;; add items to layers
       (dolist (sprite (children frame))
-        (let ((item (sprite-item sprite color-code x-offset y-offset)))
+        (multiple-value-bind (item sprite-x sprite-y)
+            (sprite-item sprite color-code x-offset y-offset)
           (case (purpose sprite)
             ((nil :remapping-data)
              ;; delete any former contents of the frame
              (when-let ((item (aref layers data-index)))
                (finalize item))
              ;; set new contents
-             (setf (aref layers data-index) item))
+             (setf (aref layers data-index) item
+                   (aref x-offsets data-index) sprite-x
+                   (aref y-offsets data-index) sprite-y))
             ((:shadow-layer)
              ;; delete any former contents of the frame
              (when-let ((item (aref layers shadow-index)))
                (finalize item))
              ;; set new contents
              (setf (aref layers shadow-index) item
+                   (aref x-offsets shadow-index) sprite-x
+                   (aref y-offsets shadow-index) sprite-y
                    (q+:opacity item) 0.5))))))))
 
 ;; TODO https://stackoverflow.com/questions/7451183/
@@ -240,10 +253,12 @@ displayed items, generated from sprites. The ordering is:
          (file (nth-funcall #'parent 4 sprite))
          (image (nth image-id (images file)))
          (pixmap (image-qpixmap image color-code))
-         (item (q+:make-qgraphicspixmapitem pixmap)))
-    (setf (q+:offset item) (values (+ (or x-offset 0) (getf offset :x))
-                                   (+ (or y-offset 0) (getf offset :y))))
-    item))
+         (item (q+:make-qgraphicspixmapitem pixmap))
+         (sprite-x (getf offset :x))
+         (sprite-y (getf offset :y)))
+    (setf (q+:offset item) (values (+ (or x-offset 0) sprite-x)
+                                   (+ (or y-offset 0) sprite-y)))
+    (values item sprite-x sprite-y)))
 
 ;; TODO do something with it perhaps
 (defun sprite-proxyitem (sprite &optional color-code x-offset y-offset)
@@ -385,6 +400,10 @@ loop at end), and T (full execution)."
   (:documentation "Executes the Kitterspeak step denoted by TYPE, ARG1 and ARG2.
 Must return non-NIL if the execution is meant to be continued after this step,
 or NIL if it should be paused."))
+
+(defmethod execute-step :before (animator type a1 a2)
+  ;;(sleep 0.1)
+  )
 
 (defmacro check-kitterspeak-type (type)
   "Checks if the provided symbol is a valid Kitterspeak type."
@@ -656,7 +675,7 @@ a delay defined by that variable instead."
   "Overrides the X offset for all frames."
   (let* ((layer (legacy-layer shape))
          (item (aref layers (ecase layer (:behind 5) (:front 6))))
-         (start (or x-value (when item (q+:x item) 0))))
+         (start (or x-value (when item (q+:x item)) 0)))
     (setf x-start start
           x-end offset
           x-start-time (get-internal-real-time)
@@ -670,7 +689,7 @@ a delay defined by that variable instead."
   "Overrides the Y offset for all frames."
   (let* ((layer (legacy-layer shape))
          (item (aref layers (ecase layer (:behind 5) (:front 6))))
-         (start (or y-value (when item (q+:y item) 0))))
+         (start (or y-value (when item (q+:y item)) 0)))
     (setf y-start start
           y-end offset
           y-start-time (get-internal-real-time)
