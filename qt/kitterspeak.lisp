@@ -245,6 +245,68 @@ displayed items, generated from sprites. The ordering is:
                                    (+ (or y-offset 0) (getf offset :y))))
     item))
 
+;; TODO do something with it perhaps
+(defun sprite-proxyitem (sprite &optional color-code x-offset y-offset)
+  (let* ((offset (offset sprite))
+         (image-id (1- (image-id sprite)))
+         (file (nth-funcall #'parent 4 sprite))
+         (image (nth image-id (images file)))
+         (pixmap (image-qpixmap image color-code))
+         (label (q+:make-qlabel))
+         (item (q+:make-qgraphicsproxywidget)))
+    (setf (q+:widget item) label
+          (q+:pixmap label) pixmap
+          (q+:margin label) 0
+          (q+:style-sheet label) "background: transparent;")
+    (setf (q+:pos item) (values (+ (or x-offset 0) (getf offset :x))
+                                (+ (or y-offset 0) (getf offset :y))))
+    item))
+
+;; TODO remove
+(defvar *sprite*)
+
+;; TODO remove
+(defun test-property-animation ()
+  (with-finalizing* ((item (sprite-proxyitem *sprite*))
+                     (label (q+:widget item))
+                     (scene (q+:make-qgraphicsscene))
+                     (animation (q+:make-qpropertyanimation label "geometry")))
+    (let* ((pixmap (q+:pixmap (q+:widget item)))
+           (width (q+:width pixmap))
+           (height (q+:height pixmap)))
+      (with-main-window (view (q+:make-qgraphicsview scene))
+        (q+:add-item scene item)
+        (setf (q+:duration animation) 20000
+              (q+:start-value animation) (q+:make-qrectf -600 0 width height)
+              (q+:end-value animation) (q+:make-qrectf 600 0 width height))
+        (q+:start animation)))))
+
+;; TODO remove
+(defun make-test-animation ()
+  (let* ((item (sprite-proxyitem *sprite*))
+         (label (q+:widget item))
+         (scene (q+:make-qgraphicsscene))
+         (animation (q+:make-qpropertyanimation label "geometry"))
+         (pixmap (q+:pixmap (q+:widget item)))
+         (width (q+:width pixmap))
+         (height (q+:height pixmap))
+         (view (q+:make-qgraphicsview scene)))
+    (q+:add-item scene item)
+    (setf (q+:duration animation) 20000
+          (q+:start-value animation) (q+:make-qrectf -600 0 width height)
+          (q+:end-value animation) (q+:make-qrectf 600 0 width height))
+    (q+:start animation)
+    (setf (q+:minimum-width view) 1500)
+    view))
+
+;; TODO remove
+(defun test-animation ()
+  (with-main-window (main-window (q+:make-qwidget))
+    (let ((layout (q+:make-qvboxlayout)))
+      (setf (q+:layout main-window) layout)
+      (dotimes (i 10)
+        (q+:add-widget layout (make-test-animation))))))
+
 (defvar *max-kitterspeak-steps* 50
   "The maximum number of steps to execute.")
 
