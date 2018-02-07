@@ -16,7 +16,7 @@
 
 ;;; Widget
 
-(define-widget animator (qwidget)
+(define-widget slow-animator (qwidget)
   (;; Shape and color code for remapping
    (shape :accessor shape
           :initarg :shape
@@ -65,7 +65,18 @@
    (y-start-time :accessor y-start-time
                  :initform 0)
    (y-duration :accessor y-end-time
-               :initform 0))
+               :initform 0)
+   ;; Opacity animation
+   (opacity-start :accessor opacity-start
+                  :initform 0)
+   (opacity-end :accessor opacity-end
+                :initform 0)
+   (opacity-value :accessor opacity-value
+                  :initform nil)
+   (opacity-start-time :accessor opacity-start-time
+                       :initform 0)
+   (opacity-duration :accessor opacity-end-time
+                     :initform 0))
   (:documentation "A widget capable of displaying animated FOX5 shapes.
 LAYERS is an eight-element array that is meant to contain the currently ~
 displayed items, generated from sprites. The ordering is:
@@ -78,78 +89,92 @@ displayed items, generated from sprites. The ordering is:
 6: front, data
 7: FG, data"))
 
-(define-subwidget (animator scene) (q+:make-qgraphicsscene))
+(define-subwidget (slow-animator scene) (q+:make-qgraphicsscene))
+
+(define-subwidget (slow-animator layout) (q+:make-qgridlayout)
+  (setf (q+:layout slow-animator) layout
+        (q+:contents-margins layout) (values 0 0 0 0)))
+
+(define-subwidget (slow-animator preview) (q+:make-qgraphicsview scene)
+  (q+:add-widget layout preview 0 0 1 2)
+  (setf (q+:row-stretch layout 0) 9001))
+
+(define-subwidget (slow-animator opacity) (q+:make-qgraphicsopacityeffect)
+  (setf (q+:opacity opacity) 1
+        (q+:graphics-effect preview) opacity))
 
 (defparameter *timer-interval* 16)
 
-(define-subwidget (animator x-timer) (q+:make-qtimer)
+(define-subwidget (slow-animator x-timer) (q+:make-qtimer)
   (setf (q+:interval x-timer) *timer-interval*))
 
-(define-slot (animator update-x-animation) ()
+;; TODO write a Kitterspeak compiler that unrolls loops, upgrades legacy rules
+;; and auto-resolves clashing slide durations
+
+;; TODO the slots should be defined on a per-shape object, so animations
+;; for different shapes do not clash with each other
+(define-slot (slow-animator update-x-animation) ()
   (declare (connected x-timer (timeout)))
   (let* ((now (get-internal-real-time))
          (diff (/ (* (- now x-start-time) 1000) internal-time-units-per-second))
-         (percentage (min 1 (/ diff x-duration)))
-         (x (round (lerp percentage x-start x-end))))
+         (percentage (min 1.0 (/ diff x-duration)))
+         (x (lerp percentage x-start x-end)))
     (setf x-value x)
     (loop for item across layers when item do (setf (q+:x item) x))
-    (unless (= percentage 1)
+    (unless (= percentage 1.0)
       (q+:start x-timer))))
 
-(define-subwidget (animator y-timer) (q+:make-qtimer)
+(define-subwidget (slow-animator y-timer) (q+:make-qtimer)
   (setf (q+:interval y-timer) *timer-interval*))
 
-(define-slot (animator update-y-animation) ()
+(define-slot (slow-animator update-y-animation) ()
   (declare (connected y-timer (timeout)))
   (let* ((now (get-internal-real-time))
-         (diff (/ (* (- now y-start-time) 1000) internal-time-units-per-second))
+         (diff (/ (* (- now y-start-time) 1000)
+                  internal-time-units-per-second))
          (percentage (min 1 (/ diff y-duration)))
-         (y (round (lerp percentage y-start y-end))))
+         (y (lerp percentage y-start y-end)))
     (setf y-value y)
     (loop for item across layers when item do (setf (q+:y item) y))
     (unless (= percentage 1)
       (q+:start y-timer))))
 
-;; (define-subwidget (animator opacity) (q+:make-qgraphicsopacityeffect)
-;;   (setf (q+:opacity opacity) 1))
+(define-subwidget (slow-animator opacity-timer) (q+:make-qtimer)
+  (setf (q+:interval opacity-timer) *timer-interval*))
 
-;; (define-subwidget (animator a-animation)
-;;     (q+:make-qpropertyanimation opacity "opacity"))
+(define-slot (slow-animator update-opacity-animation) ()
+  ;; TODO broken, make it work better one day
+  (declare (connected opacity-timer (timeout)))
+  (let* ((now (get-internal-real-time))
+         (diff (/ (* (- now opacity-start-time) 1000)
+                  internal-time-units-per-second))
+         (percentage (min 1 (/ diff opacity-duration)))
+         (value (lerp percentage opacity-start opacity-end)))
+    (setf opacity-value value)
+    (loop for item across layers when item
+          do (setf (q+:opacity item) opacity-value))
+    (unless (= percentage 1)
+      (q+:start opacity-timer))))
 
-(define-finalizer (animator finalize-animator)
-  (finalize scene)
-  ;; (finalize x-animation)
-  ;; (finalize y-animation)
-  ;; (finalize a-animation)
-  )
-
-(define-subwidget (animator layout) (q+:make-qgridlayout)
-  (setf (q+:layout animator) layout
-        (q+:contents-margins layout) (values 0 0 0 0)))
-
-(define-subwidget (animator preview) (q+:make-qgraphicsview scene)
-  (q+:add-widget layout preview 0 0 1 2)
-  (setf (q+:row-stretch layout 0) 9001))
-
-;; (define-subwidget (animator prev-button) (make-text-qtoolbutton "<")
+;; (define-subwidget (slow-animator prev-button) (make-text-qtoolbutton "<")
 ;;   (q+:add-widget layout prev-button 1 0)
 ;;   (setf (q+:size-policy prev-button)
 ;;         (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
 
-;; (define-subwidget (animator next-button) (make-text-qtoolbutton ">")
+;; (define-subwidget (slow-animator next-button) (make-text-qtoolbutton ">")
 ;;   (q+:add-widget layout next-button 1 1)
 ;;   (setf (q+:size-policy next-button)
 ;;         (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
 
 ;;; Functions
 
-;; (defun ensure-group (animator)
-;;   (with-slots-bound (animator animator)
+;; (defun ensure-group (slow-animator)
+;;   (with-slots-bound (slow-animator slow-animator)
 ;;     (unless group
 ;;       (setf group (q+:make-qgraphicsitemgroup)))))
 
-(defun update (animator)
-  (with-slots-bound (animator animator)
+(defun update (slow-animator)
+  (with-slots-bound (slow-animator slow-animator)
     (let ((items (q+:items scene)))
       ;; TODO optimize
       (dolist (item items)
@@ -167,15 +192,15 @@ displayed items, generated from sprites. The ordering is:
 (defun legacy-layer (shape)
   (if (eq (edit-type (parent shape)) :effect) :front :behind))
 
-(defun draw-shape (animator shape)
-  (setf (shape animator) shape)
-  (with-slots-bound (animator animator)
-    (draw-frame animator (first (children shape)) (legacy-layer shape))
+(defun draw-shape (slow-animator shape)
+  (setf (shape slow-animator) shape)
+  (with-slots-bound (slow-animator slow-animator)
+    (draw-frame slow-animator (first (children shape)) (legacy-layer shape))
     (when (kitterspeak shape)
-      (execute-kitterspeak animator))))
+      (execute-kitterspeak slow-animator))))
 
-(defun draw-frame (animator frame layer)
-  (with-slots-bound (animator animator)
+(defun draw-frame (slow-animator frame layer)
+  (with-slots-bound (slow-animator slow-animator)
     (let* ((shadow-index (ecase layer (:bg 0) (:behind 1) (:front 2) (:fg 3)))
            (data-index (+ shadow-index 4))
            (x-offset (getf (frame-offset frame) :x))
@@ -230,11 +255,11 @@ If NIL, then STOP commands completely stop Kitterspeak execution.
 If non-NIL, then the value of this variable is the number of milliseconds
 that will pass before KS execution is restarted from the beginning.")
 
-(defun execute-kitterspeak (animator)
-  "Begins Kitterspeak execution in the provided animator."
-  (with-slots-bound (animator animator)
+(defun execute-kitterspeak (slow-animator)
+  "Begins Kitterspeak execution in the provided slow-animator."
+  (with-slots-bound (slow-animator slow-animator)
     (with-accessors ((kitterspeak kitterspeak)) shape
-      (analyze-kitterspeak animator)
+      (analyze-kitterspeak slow-animator)
       (when (and kitterspeak execute-kitterspeak-p)
         ;; TODO optimize simple kitterspeak use cases
         ;; TODO turn kitterspeak into array one day
@@ -242,19 +267,19 @@ that will pass before KS execution is restarted from the beginning.")
           repeat *max-kitterspeak-steps*
           for step = (nth current-step kitterspeak)
           for (type arg1 arg2) = step
-          for continuep = (funcall #'execute-step animator type arg1 arg2)
+          for continuep = (funcall #'execute-step slow-animator type arg1 arg2)
           for next = (nth (1+ current-step) kitterspeak)
           do (incf current-step)
           when (member type '(:show-bg-frame :show-behind-frame
                               :show-front-frame :show-fg-frame
                               :show-frame))
             unless (member (car next) '(:delay :random-delay))
-              do (execute-step animator :random-delay
+              do (execute-step slow-animator :random-delay
                                auto-delay-min auto-delay-max)
                  (return nil)
           unless continuep
             return nil)
-        (update animator)))))
+        (update slow-animator)))))
 
 (defvar *kitterspeak-ignored-keywords*
   '(:furre-x :furre-y :slide-furre-x :slide-furre-y :camera-follow-furre-p
@@ -276,11 +301,11 @@ that will pass before KS execution is restarted from the beginning.")
   "Kitterspeak rule types allowed in script that is meant not to be executed at
 all.")
 
-(defun analyze-kitterspeak (animator)
+(defun analyze-kitterspeak (slow-animator)
   "Analyzes the kitterspeak for possible optimizations and sets the
 EXECUTE-KITTERSPEAK-P variable to NIL (no execution), :ONCE (execute but don't
 loop at end), and T (full execution)."
-  (with-slots-bound (animator animator)
+  (with-slots-bound (slow-animator slow-animator)
     (with-accessors ((kitterspeak kitterspeak)) shape
       (let ((types (mapcar #'car kitterspeak)))
         (cond
@@ -289,12 +314,12 @@ loop at end), and T (full execution)."
           ((every (rcurry #'member *kitterspeak-execute-nil-keywords*) types)
            (setf execute-kitterspeak-p nil)))))))
 
-(define-slot (animator execute-kitterspeak) ()
+(define-slot (slow-animator execute-kitterspeak) ()
   ;; TODO differentiate based on some serial, so we don't execute kitterspeak
   ;; if the current shape differs from the one for which the slot was called
-  (execute-kitterspeak animator))
+  (execute-kitterspeak slow-animator))
 
-(defgeneric execute-step (animator type arg1 arg2)
+(defgeneric execute-step (slow-animator type arg1 arg2)
   (:documentation "Executes the Kitterspeak step denoted by TYPE, ARG1 and ARG2.
 Must return non-NIL if the execution is meant to be continued after this step,
 or NIL if it should be paused."))
@@ -305,7 +330,7 @@ or NIL if it should be paused."))
                        "~S is not a valid Kitterspeak type." ,type)))
 
 (defmacro define-kitterspeak
-    (type (&optional (animator 'animator) (arg1 'arg1) (arg2 'arg2))
+    (type (&optional (slow-animator 'slow-animator) (arg1 'arg1) (arg2 'arg2))
      &body body)
   "Defines a method for parsing Kitterspeak for line TYPE. Return value of BODY
 states if Kitterspeak processing should continue after the body of this method
@@ -314,12 +339,12 @@ until the timer fires next time, in case of delays)."
   `(progn
      (check-kitterspeak-type ,type)
      (defmethod execute-step
-         ((,animator animator) (type (eql ,type)) ,arg1 ,arg2)
+         ((,slow-animator slow-animator) (type (eql ,type)) ,arg1 ,arg2)
        ,@(if (and body (stringp (first body)))
              `(,(car body)
-               (with-slots-bound (,animator animator)
+               (with-slots-bound (,slow-animator slow-animator)
                  ,@(cdr body)))
-             `((with-slots-bound (,animator animator)
+             `((with-slots-bound (,slow-animator slow-animator)
                  ,@body))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -327,50 +352,50 @@ until the timer fires next time, in case of delays)."
 
 ;; 0 - NIL
 
-(define-kitterspeak nil (animator)
+(define-kitterspeak nil (slow-animator)
   "Null method. Called each time the Kitterspeak reaches its end. This method's
  sole purpose is to loop back to the beginning."
   (unless (eq execute-kitterspeak-p :once)
-    (execute-step animator :jump 0 0)))
+    (execute-step slow-animator :jump 0 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Frame order
 
 ;; 23 - :SHOW-BG-FRAME
 
-(define-kitterspeak :show-bg-frame (animator nframe)
+(define-kitterspeak :show-bg-frame (slow-animator nframe)
   "Shows frame number NFRAME on layer BG."
   (when-let ((frame (nth nframe (children shape))))
-    (draw-frame animator frame :bg))
+    (draw-frame slow-animator frame :bg))
   t)
 
 ;; 29 - :SHOW-BEHIND-FRAME
 
-(define-kitterspeak :show-behind-frame (animator nframe)
+(define-kitterspeak :show-behind-frame (slow-animator nframe)
   "Shows frame number NFRAME on layer BEHIND."
   (when-let ((frame (nth nframe (children shape))))
-    (draw-frame animator frame :behind))
+    (draw-frame slow-animator frame :behind))
   t)
 
 ;; 30 - :SHOW-FRONT-FRAME
 
-(define-kitterspeak :show-front-frame (animator nframe)
+(define-kitterspeak :show-front-frame (slow-animator nframe)
   "Shows frame number NFRAME on layer FRONT."
   (when-let ((frame (nth nframe (children shape))))
-    (draw-frame animator frame :front))
+    (draw-frame slow-animator frame :front))
   t)
 
 ;; 24 - :SHOW-FG-FRAME
 
-(define-kitterspeak :show-fg-frame (animator nframe)
+(define-kitterspeak :show-fg-frame (slow-animator nframe)
   "Shows frame number NFRAME on layer FG."
   (when-let ((frame (nth nframe (children shape))))
-    (draw-frame animator frame :fg))
+    (draw-frame slow-animator frame :fg))
   t)
 
 ;; 31 - :MOVE-FORWARD
 
-(define-kitterspeak :move-forward (animator nframe)
+(define-kitterspeak :move-forward (slow-animator nframe)
   "Moves frame NFRAME forward using the following conditions."
   (when-let* ((frame (nth nframe (children shape)))
               (position (position frame frame-layers)))
@@ -421,7 +446,7 @@ until the timer fires next time, in case of delays)."
 
 ;; 32 - :MOVE-BACKWARD
 
-(define-kitterspeak :move-backward (animator nframe)
+(define-kitterspeak :move-backward (slow-animator nframe)
   "Moves frame NFRAME backward using the following conditions."
   (when-let* ((frame (nth nframe (children shape)))
               (position (position frame frame-layers)))
@@ -474,25 +499,25 @@ until the timer fires next time, in case of delays)."
 
 ;; 2 - :DELAY
 
-(define-kitterspeak :delay (animator msec)
+(define-kitterspeak :delay (slow-animator msec)
   "Delays Kitterspeak execution for X milliseconds."
-  (q+:qtimer-single-shot msec animator (qslot "executeKitterspeak()"))
+  (q+:qtimer-single-shot msec slow-animator (qslot "executeKitterspeak()"))
   nil)
 
 ;; 15 - :RANDOM-DELAY
 
-(define-kitterspeak :random-delay (animator msec1 msec2)
+(define-kitterspeak :random-delay (slow-animator msec1 msec2)
   "Delays Kitterspeak execution for a random amount of time between X and Y
 milliseconds."
   (let* ((diff (1+ (- msec2 msec1)))
          (sum (+ msec1 (random diff)))
          (time (if (positive-real-p sum) sum 0)))
-    (execute-step animator :delay time 0))
+    (execute-step slow-animator :delay time 0))
   nil)
 
 ;; 11 - :AUTO-DELAY
 
-(define-kitterspeak :auto-delay (animator msec)
+(define-kitterspeak :auto-delay (slow-animator msec)
   "Sets the automatic delay to the following value."
   (setf auto-delay-min msec
         auto-delay-max msec)
@@ -500,7 +525,7 @@ milliseconds."
 
 ;; 14 - :RANDOM-AUTO-DELAY
 
-(define-kitterspeak :random-auto-delay (animator min max)
+(define-kitterspeak :random-auto-delay (slow-animator min max)
   "Sets the random automatic delay to the following values."
   (setf auto-delay-min min
         auto-delay-max max)
@@ -508,32 +533,32 @@ milliseconds."
 
 ;; 3 - :LOOP
 
-(define-kitterspeak :loop (animator nstep count)
+(define-kitterspeak :loop (slow-animator nstep count)
   "Loops to step NSTEP COUNT times, then continues."
   (let ((current (ensure-gethash current-step loop-counters 0)))
     (cond ((<= count current)
            (setf (gethash current-step loop-counters) 0))
           (t
            (incf (gethash current-step loop-counters))
-           (execute-step animator :jump nstep 0))))
+           (execute-step slow-animator :jump nstep 0))))
   t)
 
 ;; 4 - :JUMP
 
-(define-kitterspeak :jump (animator nstep)
+(define-kitterspeak :jump (slow-animator nstep)
   "Jumps to step N."
   (setf current-step (1- nstep))
   t)
 
 ;; 12 - :STOP
 
-(define-kitterspeak :stop (animator)
+(define-kitterspeak :stop (slow-animator)
   "Stops Kitterspeak execution. If *KITTERSPEAK-STOP-DELAY* is set, executes
 a delay defined by that variable instead."
   (when-let ((delay *kitterspeak-stop-delay*))
-    ;; TODO better cleaning of animator state
-    (execute-step animator :jump 0 0)
-    (execute-step animator :delay delay 0))
+    ;; TODO better cleaning of slow-animator state
+    (execute-step slow-animator :jump 0 0)
+    (execute-step slow-animator :delay delay 0))
   nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -541,23 +566,23 @@ a delay defined by that variable instead."
 
 ;; 5 - :FRAME-X
 
-(define-kitterspeak :frame-x (animator offset)
+(define-kitterspeak :frame-x (slow-animator offset)
   "Overrides the X offset for all frames."
-  ;; TODO
+  (execute-step slow-animator :slide-frame-x offset 0)
   t)
 
 ;; 6 - :FRAME-Y
 
-(define-kitterspeak :frame-y (animator offset)
+(define-kitterspeak :frame-y (slow-animator offset)
   "Overrides the Y offset for all frames."
-  ;; TODO
+  (execute-step slow-animator :slide-frame-y offset 0)
   t)
 
 ;; 17 - :OPACITY
 
-(define-kitterspeak :opacity (animator opacity)
+(define-kitterspeak :opacity (slow-animator value)
   "Overrides the total opacity of the image."
-  ;; TODO
+  (execute-step slow-animator :slide-opacity value 0)
   t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -565,7 +590,7 @@ a delay defined by that variable instead."
 
 ;; 18 - :SLIDE-FRAME-X
 
-(define-kitterspeak :slide-frame-x (animator offset msec)
+(define-kitterspeak :slide-frame-x (slow-animator offset msec)
   "Overrides the X offset for all frames."
   (let* ((layer (legacy-layer shape))
          (item (aref layers (ecase layer (:behind 5) (:front 6))))
@@ -579,7 +604,7 @@ a delay defined by that variable instead."
 
 ;; 19 - :SLIDE-FRAME-Y
 
-(define-kitterspeak :slide-frame-y (animator offset msec)
+(define-kitterspeak :slide-frame-y (slow-animator offset msec)
   "Overrides the Y offset for all frames."
   (let* ((layer (legacy-layer shape))
          (item (aref layers (ecase layer (:behind 5) (:front 6))))
@@ -593,9 +618,15 @@ a delay defined by that variable instead."
 
 ;; 22 - :SLIDE-OPACITY
 
-(define-kitterspeak :slide-opacity (animator opacity msec)
-  "Overrides the total opacity of the image."
-  ;; TODO
+(define-kitterspeak :slide-opacity (slow-animator value msec)
+  "Overrides the opacity for whole image."
+  (let* ((value (/ value 255.0))
+         (start (or opacity-value (q+:opacity opacity))))
+    (setf opacity-start start
+          opacity-end value
+          opacity-start-time (get-internal-real-time)
+          opacity-duration msec)
+    (q+:start opacity-timer))
   t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -603,7 +634,7 @@ a delay defined by that variable instead."
 
 ;; 1 - :SHOW-FRAME
 
-(define-kitterspeak :show-frame (animator nframe)
+(define-kitterspeak :show-frame (slow-animator nframe)
   ;; TODO
   t)
 
