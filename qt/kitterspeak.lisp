@@ -100,8 +100,9 @@ displayed items, generated from sprites. The ordering is:
         (q+:contents-margins layout) (values 0 0 0 0)))
 
 (define-subwidget (slow-animator preview) (q+:make-qgraphicsview scene)
-  (q+:add-widget layout preview 0 0 1 2)
-  (setf (q+:row-stretch layout 0) 9001))
+  (q+:add-widget layout preview 0 0 1 1)
+  ;; (setf (q+:scene-rect preview) (values 0 0 100 100))
+  )
 
 (define-subwidget (slow-animator opacity) (q+:make-qgraphicsopacityeffect)
   (setf (q+:opacity opacity) 1
@@ -163,16 +164,6 @@ displayed items, generated from sprites. The ordering is:
           do (setf (q+:opacity item) opacity-value))
     (unless (= percentage 1)
       (q+:start opacity-timer))))
-
-;; (define-subwidget (slow-animator prev-button) (make-text-qtoolbutton "<")
-;;   (q+:add-widget layout prev-button 1 0)
-;;   (setf (q+:size-policy prev-button)
-;;         (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
-
-;; (define-subwidget (slow-animator next-button) (make-text-qtoolbutton ">")
-;;   (q+:add-widget layout next-button 1 1)
-;;   (setf (q+:size-policy next-button)
-;;         (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
 
 ;;; Functions
 
@@ -799,3 +790,35 @@ implemented."
 (define-kitterspeak :hide-fg ()
   "Deprecated, not implemented."
   t)
+
+
+
+
+
+
+
+
+
+;; Object showcase
+
+(define-widget showcase (qwidget)
+  ((object :accessor object
+           :initarg :object
+           :initform nil)))
+
+(define-subwidget (showcase layout) (q+:make-qgridlayout)
+  (setf (q+:layout showcase) layout
+        (q+:contents-margins layout) (values 4 4 4 4)))
+
+(define-subwidget (showcase animator) (make-instance 'slow-animator)
+  (q+:add-widget layout animator 0 0 1 2))
+
+(define-subwidget (showcase prev-button) (make-text-qtoolbutton "<")
+  (q+:add-widget layout prev-button 1 0)
+  (setf (q+:size-policy prev-button)
+        (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
+
+(define-subwidget (showcase next-button) (make-text-qtoolbutton ">")
+  (q+:add-widget layout next-button 1 1)
+  (setf (q+:size-policy next-button)
+        (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
