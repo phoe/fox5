@@ -804,10 +804,17 @@ implemented."
 (define-widget showcase (qwidget)
   ((object :accessor object
            :initarg :object
-           :initform nil)))
+           :initform nil)
+   (color-code :accessor color-code
+               :initarg :color-code
+               :initform nil)
+   (current-shape :accessor current-shape
+                  :initarg :current-shape
+                  :initform 0)))
 
 (define-subwidget (showcase layout) (q+:make-qgridlayout)
   (setf (q+:layout showcase) layout
+        (q+:row-stretch layout 0) 9001
         (q+:contents-margins layout) (values 4 4 4 4)))
 
 (define-subwidget (showcase animator) (make-instance 'slow-animator)
@@ -822,3 +829,31 @@ implemented."
   (q+:add-widget layout next-button 1 1)
   (setf (q+:size-policy next-button)
         (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
+
+(define-constructor (showcase)
+  (with-slots-bound (showcase showcase)
+    (setf (color-code animator) color-code)))
+
+(define-slot (showcase prev-shape) ()
+  (declare (connected prev-button (clicked)))
+  (finalize animator)
+  (setf animator (make-instance 'slow-animator))
+  (setf (color-code animator) color-code)
+  (q+:add-widget layout animator 0 0 1 2)
+  (draw-object showcase object (1- current-shape)))
+
+(define-slot (showcase next-shape) ()
+  (declare (connected next-button (clicked)))
+  (finalize animator)
+  (setf animator (make-instance 'slow-animator))
+  (setf (color-code animator) color-code)
+  (q+:add-widget layout animator 0 0 1 2)
+  (draw-object showcase object (1+ current-shape)))
+
+(defun draw-object (showcase object &optional (nshape 0))
+  (let* ((shapes (children object))
+         (nshapes (length shapes))
+         (nshape (mod nshape nshapes))
+         (shape (nth nshape shapes)))
+    (setf (current-shape showcase) nshape)
+    (draw-shape (slot-value showcase 'animator) shape)))
