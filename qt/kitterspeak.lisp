@@ -195,8 +195,9 @@ displayed items, generated from sprites. The ordering is:
   (setf (shape slow-animator) shape)
   (with-slots-bound (slow-animator slow-animator)
     (draw-frame slow-animator (first (children shape)) (legacy-layer shape))
-    (when (kitterspeak shape)
-      (execute-kitterspeak slow-animator))))
+    (if (kitterspeak shape)
+        (execute-kitterspeak slow-animator)
+        (update slow-animator))))
 
 (defun draw-frame (slow-animator frame layer)
   (with-slots-bound (slow-animator slow-animator)
@@ -857,3 +858,12 @@ implemented."
          (shape (nth nshape shapes)))
     (setf (current-shape showcase) nshape)
     (draw-shape (slot-value showcase 'animator) shape)))
+
+#|
+(with-main-window (layout (make-instance 'qui:flow-layout))
+  (dolist (object (children (parent *object*)))
+    (let ((showcase (make-instance 'showcase :object object
+                                             :color-code "w&#L&@(=(='###$#")))
+      (qui:add-widget showcase layout)
+      (draw-object showcase object))))
+|#
