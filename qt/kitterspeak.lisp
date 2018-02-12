@@ -917,6 +917,7 @@ implemented."
 
 (defgeneric %object-complex-avatar-shapes (object edit-type gender))
 
+;; TODO test for non-gendered avatars
 (defmethod %object-complex-avatar-shapes
     (object (edit-type (eql :avatar)) gender)
   (declare (ignore gender))
