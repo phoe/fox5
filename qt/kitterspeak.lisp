@@ -803,15 +803,20 @@ implemented."
 ;; Object showcase
 
 (define-widget showcase (qwidget)
-  ((object :accessor object
+  ((object :reader object
            :initarg :object
-           :initform nil)
+           :initform (error "Must specify an object."))
    (color-code :accessor color-code
                :initarg :color-code
                :initform nil)
    (current-shape :accessor current-shape
                   :initarg :current-shape
-                  :initform 0)))
+                  :initform 0)
+   (shapes :accessor shapes
+           :initarg shapes)
+   (predicate :reader predicate
+              :initarg :predicate
+              :initform #'identity)))
 
 (define-subwidget (showcase layout) (q+:make-qgridlayout)
   (setf (q+:layout showcase) layout
@@ -831,33 +836,132 @@ implemented."
   (setf (q+:size-policy next-button)
         (values (q+:qsizepolicy.expanding) (q+:qsizepolicy.expanding))))
 
-(define-constructor (showcase)
+(defun reset-animator (showcase)
   (with-slots-bound (showcase showcase)
-    (setf (color-code animator) color-code)))
+    (finalize animator)
+    (setf animator (make-instance 'slow-animator))
+    (setf (color-code animator) color-code)
+    (q+:add-widget layout animator 0 0 1 2)))
 
 (define-slot (showcase prev-shape) ()
   (declare (connected prev-button (clicked)))
-  (finalize animator)
-  (setf animator (make-instance 'slow-animator))
-  (setf (color-code animator) color-code)
-  (q+:add-widget layout animator 0 0 1 2)
-  (draw-object showcase object (1- current-shape)))
+  (reset-animator showcase)
+  (draw-object showcase :nshape (1- current-shape)))
 
 (define-slot (showcase next-shape) ()
   (declare (connected next-button (clicked)))
-  (finalize animator)
-  (setf animator (make-instance 'slow-animator))
-  (setf (color-code animator) color-code)
-  (q+:add-widget layout animator 0 0 1 2)
-  (draw-object showcase object (1+ current-shape)))
+  (reset-animator showcase)
+  (draw-object showcase :nshape (1+ current-shape)))
 
-(defun draw-object (showcase object &optional (nshape 0))
-  (let* ((shapes (children object))
-         (nshapes (length shapes))
-         (nshape (mod nshape nshapes))
-         (shape (nth nshape shapes)))
-    (setf (current-shape showcase) nshape)
-    (draw-shape (slot-value showcase 'animator) shape)))
+(define-constructor (showcase complicate-shapes-p gender)
+  (with-slots-bound (showcase showcase)
+    (setf (color-code animator) color-code)
+    (if complicate-shapes-p
+        (setf (shapes showcase) (object-complex-avatar-shapes object gender))
+        (setf (shapes showcase) (remove-if-not predicate (children object))))
+    (draw-object showcase)))
+
+(defun draw-object (showcase &key (nshape 0))
+  (when-let ((shapes (shapes showcase)))
+    (let* ((nshapes (length shapes))
+           (nshape (mod nshape nshapes))
+           (shape (nth nshape shapes)))
+      (setf (current-shape showcase) nshape)
+      (draw-shape (slot-value showcase 'animator) shape)
+      (when (eq (class-of shape) (find-class 'walk-shape))
+        (q+:qtimer-single-shot *walk-speed*
+                               showcase (qslot "animateComplex()"))))))
+
+(defun only-avatar-shapes (&optional gender)
+  (lambda (shape)
+    (let ((shape-type (shape-type shape)))
+      (case (first shape-type)
+        (:avatar (eq (second shape-type) :avatar))
+        (:gendered-avatar
+         (and (eq (second shape-type) :avatar)
+              (if gender (eq (third shape-type) gender) t)))))))
+
+(defclass walk-shape (shape)
+  ((walk-left :reader walk-left
+              :initarg :walk-left
+              :initform nil)
+   (walk-right :reader walk-right
+               :initarg :walk-right
+               :initform nil)
+   (walk-parent :reader walk-parent
+                :initarg :walk-parent
+                :initform nil)
+   (left-now-p :accessor left-now-p
+               :initform t)))
+
+(defparameter *walk-speed* 200
+  "Walking speed in milliseconds.")
+
+(define-slot (showcase animate-complex) ()
+  (with-slots (shape) animator
+    (when (eq (class-of shape) (find-class 'walk-shape))
+      (reset-animator showcase)
+      (cond ((walk-parent shape)
+             (setf (left-now-p (walk-parent shape))
+                   (not (left-now-p (walk-parent shape))))
+             (draw-shape animator (walk-parent shape)))
+            ((left-now-p shape)
+             (draw-shape animator (walk-left shape)))
+            (t
+             (draw-shape animator (walk-right shape))))
+      (q+:qtimer-single-shot *walk-speed* showcase (qslot "animateComplex()")))))
+
+(defun object-complex-avatar-shapes (object &optional gender)
+  "Returns a fresh list containing complex avatar shapes."
+  (%object-complex-avatar-shapes object (edit-type object) gender))
+
+(defgeneric %object-complex-avatar-shapes (object edit-type gender))
+
+(defmethod %object-complex-avatar-shapes
+    (object (edit-type (eql :avatar)) gender)
+  (declare (ignore gender))
+  (loop with shapes = (remove-if-not (only-avatar-shapes)
+                                     (children object))
+        for shape in shapes
+        for (x y direction size pose) = (shape-type shape)
+        if (and (eq pose :walk) (eq (class-of shape) (find-class 'shape)))
+          collect (let* ((fn (lambda (shape)
+                               (let ((shape-type (shape-type shape)))
+                                 (and (eq (third shape-type) direction)
+                                      (eq (fourth shape-type) size)
+                                      (fifth shape-type)))))
+                         (right (find :walk-left shapes :key fn))
+                         (left (find :walk-right shapes :key fn)))
+                    (change-class right 'walk-shape :walk-parent shape)
+                    (change-class left 'walk-shape :walk-parent shape)
+                    (change-class shape 'walk-shape :walk-left left
+                                                    :walk-right right))
+        else if (member pose '(:walk-left :walk-right))
+               do (progn)
+        else collect shape))
+
+(defmethod %object-complex-avatar-shapes
+    (object (edit-type (eql :gendered-avatar)) gender)
+  (loop with shapes = (remove-if-not (only-avatar-shapes gender)
+                                     (children object))
+        for shape in shapes
+        for (x y gender direction size pose) = (shape-type shape)
+        if (and (eq pose :walk) (eq (class-of shape) (find-class 'shape)))
+          collect (let* ((fn (lambda (shape)
+                               (let ((shape-type (shape-type shape)))
+                                 (and (eq (third shape-type) gender)
+                                      (eq (fourth shape-type) direction)
+                                      (eq (fifth shape-type) size)
+                                      (sixth shape-type)))))
+                         (right (find :walk-left shapes :key fn))
+                         (left (find :walk-right shapes :key fn)))
+                    (change-class right 'walk-shape :walk-parent shape)
+                    (change-class left 'walk-shape :walk-parent shape)
+                    (change-class shape 'walk-shape
+                                  :walk-left left :walk-right right))
+        else if (member pose '(:walk-left :walk-right))
+               do (progn)
+        else collect shape))
 
 #|
 (with-main-window (layout (make-instance 'qui:flow-layout))
@@ -866,4 +970,11 @@ implemented."
                                              :color-code "w&#L&@(=(='###$#")))
       (qui:add-widget showcase layout)
       (draw-object showcase object))))
+
+(with-main-window (showcase (make-instance 'showcase
+                                           :object *object*
+                                           :color-code "w&#L&@(=(='###$#"
+                                           :predicate (only-avatar-shapes)
+                                           :complicate-shapes-p t
+                                           :gender :male)))
 |#

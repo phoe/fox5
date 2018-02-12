@@ -5,6 +5,13 @@
 
 (in-package :fox5)
 
+;;; Utils
+
+(defun parent-push (parent child)
+  (push child (children parent))
+  (setf (parent child) parent)
+  (values))
+
 ;;; Framework - Readers
 
 (defgeneric shape-type (shape)
@@ -163,28 +170,59 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
 
 ;;; AVATAR GENDERED-AVATAR
 
-(define-shape-type-get (:avatar :gendered-avatar)
+(define-shape-type-get (:avatar)
   (cons purpose
         (ecase purpose
           (:menu-icon
            `(,(ecase num (1 :tiny) (2 :small) (3 :large) (4 :showcase))))
+          ((:butler :portrait :specitag))
+          (:avatar
+           `(,direction
+             ,(case num (1 :small) (2 :large) (t num))
+             ,(ecase (ldb (byte 4 4) state)
+                (1 :walk-right) (2 :lie) (3 :walk) (4 :sit) (5 :walk-left)))))))
+
+(define-shape-type-set (:avatar)
+  (ecase (first new-value)
+    (:menu-icon (setf num (ecase (second new-value)
+                            (:tiny 1) (:small 2) (:large 3) (:showcase 4))))
+    ((:butler :portrait :specitag))
+    (:avatar
+     (setf direction (second new-value))
+     (setf num (ecase (third new-value) (:small 1) (:large 2)))
+     (setf den 1)
+     (setf (ldb (byte 4 4) state)
+           (ecase (fourth new-value)
+             (:walk-right 1) (:lie 2) (:walk 3) (:sit 4) (:walk-left 5))))))
+
+;;; GENDERED-AVATAR
+
+(define-shape-type-get (:gendered-avatar)
+  (cons purpose
+        (ecase purpose
+          (:menu-icon
+           `(,(ecase num (1 :tiny) (2 :small) (3 :large) (4 :showcase))
+             ,(ecase state (1 :female) (2 :male) (4 :unspecified))))
           ((:butler :portrait :specitag)
-           `(,(ecase state (0 nil) (1 :female) (2 :male) (4 :unspecified))))
+           `(,(ecase state (1 :female) (2 :male) (4 :unspecified))))
           (:avatar
            `(,(ecase (ldb (byte 4 0) state)
-                (0 nil) (1 :female) (2 :male) (4 :unspecified))
+                (1 :female) (2 :male) (4 :unspecified))
              ,direction
              ,(case num (1 :small) (2 :large) (t num))
              ,(ecase (ldb (byte 4 4) state)
                 (1 :walk-right) (2 :lie) (3 :walk) (4 :sit) (5 :walk-left)))))))
 
-(define-shape-type-set (:avatar :gendered-avatar)
+(define-shape-type-set (:gendered-avatar)
   (ecase (first new-value)
-    (:menu-icon (setf num (ecase (second new-value)
-                            (:tiny 1) (:small 2) (:large 3) (:showcase 4))))
+    (:menu-icon
+     (setf num (ecase (second new-value)
+                 (:tiny 1) (:small 2) (:large 3) (:showcase 4)))
+     (setf state (ecase (third new-value)
+                   (:female 1) (:male 2) (:unspecified 4))))
     ((:butler :portrait :specitag)
      (setf state (ecase (second new-value)
-                   ((nil) 0) (:female 1) (:male 2) (:unspecified 4))))
+                   (:female 1) (:male 2) (:unspecified 4))))
     (:avatar
      (setf (ldb (byte 4 0) state)
            (ecase (second new-value)
@@ -250,17 +288,27 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
     ;; PORTRAIT SET
     (dolist (i '(:female :male :unspecified))
       (collect (list :portrait-set :portrait i)))
-    ;; AVATAR GENDERED-AVATAR
+    ;; AVATAR
     (dolist (i '(:tiny :small :large :showcase))
       (collect (list :avatar :menu-icon i)))
     (dolist (i '(:butler :portrait :specitag))
+      (collect (list :avatar i)))
+    (dolist (j '(:nw :ne :sw :se))
+      (dolist (k '(:small :large))
+        (dolist (l '(:walk-right :lie :walk :sit :walk-left))
+          (collect (list :avatar :avatar j k l)))))
+    ;; GENDERED-AVATAR
+    (dolist (i '(:tiny :small :large :showcase))
       (dolist (j '(:female :male :unspecified))
-        (collect (list :avatar i j))))
-    (dolist (i '(nil :female :male :unspecified))
+        (collect (list :gendered-avatar :menu-icon i j))))
+    (dolist (i '(:butler :portrait :specitag))
+      (dolist (j '(:female :male :unspecified))
+        (collect (list :gendered-avatar i j))))
+    (dolist (i '(:female :male :unspecified))
       (dolist (j '(:nw :ne :sw :se))
         (dolist (k '(:small :large))
           (dolist (l '(:walk-right :lie :walk :sit :walk-left))
-            (collect (list :avatar :avatar i j k l))))))
+            (collect (list :gendered-avatar :avatar i j k l))))))
     ;; BUTTON DS-BUTTON
     (dolist (i '(:button :ds-button))
       (dolist (j '(:normal :clicked :hover :toggled))
