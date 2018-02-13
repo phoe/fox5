@@ -901,15 +901,33 @@ implemented."
   (with-slots (shape) animator
     (when (eq (class-of shape) (find-class 'walk-shape))
       (reset-animator showcase)
-      (cond ((walk-parent shape)
-             (setf (left-now-p (walk-parent shape))
-                   (not (left-now-p (walk-parent shape))))
-             (draw-shape animator (walk-parent shape)))
-            ((left-now-p shape)
-             (draw-shape animator (walk-left shape)))
-            (t
-             (draw-shape animator (walk-right shape))))
-      (q+:qtimer-single-shot *walk-speed* showcase (qslot "animateComplex()")))))
+      (let ((hoppingp (oddp (more-flags (parent shape)))))
+        (if hoppingp
+            (draw-hopping animator shape)
+            (draw-nonhopping animator shape)))
+      (q+:qtimer-single-shot *walk-speed* showcase
+                             (qslot "animateComplex()")))))
+
+(defun draw-hopping (animator shape)
+  (cond
+    ((null (walk-parent shape))
+     (draw-shape animator (walk-right shape)))
+    ((left-now-p (walk-parent shape))
+     (notf (left-now-p (walk-parent shape)))
+     (draw-shape animator (walk-left (walk-parent shape))))
+    (t
+     (notf (left-now-p (walk-parent shape)))
+     (draw-shape animator (walk-parent shape)))))
+
+(defun draw-nonhopping (animator shape)
+  (cond
+    ((walk-parent shape)
+     (notf (left-now-p (walk-parent shape)))
+     (draw-shape animator (walk-parent shape)))
+    ((left-now-p shape)
+     (draw-shape animator (walk-left shape)))
+    (t
+     (draw-shape animator (walk-right shape)))))
 
 (defun object-complex-avatar-shapes (object &optional gender)
   "Returns a fresh list containing complex avatar shapes."
