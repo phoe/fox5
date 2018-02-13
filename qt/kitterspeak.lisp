@@ -903,12 +903,12 @@ implemented."
       (reset-animator showcase)
       (let ((hoppingp (oddp (more-flags (parent shape)))))
         (if hoppingp
-            (draw-hopping animator shape)
-            (draw-nonhopping animator shape)))
+            (%draw-hopping animator shape)
+            (%draw-nonhopping animator shape)))
       (q+:qtimer-single-shot *walk-speed* showcase
                              (qslot "animateComplex()")))))
 
-(defun draw-hopping (animator shape)
+(defun %draw-hopping (animator shape)
   (cond
     ((null (walk-parent shape))
      (draw-shape animator (walk-right shape)))
@@ -919,7 +919,7 @@ implemented."
      (notf (left-now-p (walk-parent shape)))
      (draw-shape animator (walk-parent shape)))))
 
-(defun draw-nonhopping (animator shape)
+(defun %draw-nonhopping (animator shape)
   (cond
     ((walk-parent shape)
      (notf (left-now-p (walk-parent shape)))
