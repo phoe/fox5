@@ -15,43 +15,42 @@
    #:cl-furcadia/constants)
   (:shadowing-import-from #:fox5 #:ratio #:parent)
   (:export
-   #:display #:display2 #:display3 #:display4 #:display5
    #:*sample-color-codes*
-   #:image-qpixmap))
+   #:showcase))
 
 (in-package :fox5/qt)
 (in-readtable :qtools)
 
-(defun display (image)
-  (with-main-window (qlabel (q+:make-qlabel))
-    (setf (q+:pixmap qlabel) (image-qpixmap image))))
+;; (defun display (image)
+;;   (with-main-window (qlabel (q+:make-qlabel))
+;;     (setf (q+:pixmap qlabel) (image-qpixmap image))))
 
-(defun display2 (images)
-  (with-main-window (qlabel (q+:make-qlabel "Test"))
-    (loop for image in images
-          for label = (q+:make-qlabel)
-          do (setf (q+:pixmap label) (image-qpixmap image))
-             (q+:show label))))
+;; (defun display2 (images)
+;;   (with-main-window (qlabel (q+:make-qlabel "Test"))
+;;     (loop for image in images
+;;           for label = (q+:make-qlabel)
+;;           do (setf (q+:pixmap label) (image-qpixmap image))
+;;              (q+:show label))))
 
-(defun display3 (images &rest color-codes)
-  (with-main-window (main-window (make-instance 'qui:flow-layout))
-    (loop for image in images
-          do (loop for color-code in (cons nil color-codes)
-                   for label = (q+:make-qlabel)
-                   do (setf (q+:pixmap label) (image-qpixmap image color-code))
-                      (qui:add-widget label main-window)))))
+;; (defun display3 (images &rest color-codes)
+;;   (with-main-window (main-window (make-instance 'qui:flow-layout))
+;;     (loop for image in images
+;;           do (loop for color-code in (cons nil color-codes)
+;;                    for label = (q+:make-qlabel)
+;;                    do (setf (q+:pixmap label) (image-qpixmap image color-code))
+;;                       (qui:add-widget label main-window)))))
 
-(defun display4 (images)
-  (apply #'display3 images *sample-color-codes*))
+;; (defun display4 (images)
+;;   (apply #'display3 images *sample-color-codes*))
 
-(defun display5 (images &rest color-codes)
-  (with-main-window (main-window (make-instance 'qui:flow-layout))
-    (loop for image in images
-          do (loop for color-code in color-codes
-                   for label = (q+:make-qlabel)
-                   ;; TODO optimize, right now the gradients are recalculated every time
-                   do (setf (q+:pixmap label) (image-qpixmap image color-code))
-                      (qui:add-widget label main-window)))))
+;; (defun display5 (images &rest color-codes)
+;;   (with-main-window (main-window (make-instance 'qui:flow-layout))
+;;     (loop for image in images
+;;           do (loop for color-code in color-codes
+;;                    for label = (q+:make-qlabel)
+;;                    ;; TODO optimize, right now the gradients are recalculated every time
+;;                    do (setf (q+:pixmap label) (image-qpixmap image color-code))
+;;                       (qui:add-widget label main-window)))))
 
 ;;; TODO write something that utilizes REMAP-ALL
 

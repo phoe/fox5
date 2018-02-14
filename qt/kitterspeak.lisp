@@ -855,6 +855,8 @@ implemented."
 
 (define-constructor (showcase complicate-shapes-p gender)
   (with-slots-bound (showcase showcase)
+    (setf (q+:minimum-width animator) 128
+          (q+:minimum-height animator) 96)
     (setf (color-code animator) color-code)
     (if complicate-shapes-p
         (setf (shapes showcase) (object-complex-avatar-shapes object gender))
