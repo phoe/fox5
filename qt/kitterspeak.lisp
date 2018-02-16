@@ -14,6 +14,9 @@
           (q+:tool-button-style button) (q+:qt.tool-button-text-only))
     button))
 
+(defparameter *walk-speed* 150
+  "Walking speed in milliseconds.")
+
 ;;; Widget
 
 (define-widget slow-animator (qwidget)
@@ -80,7 +83,9 @@
    (opacity-start-time :accessor opacity-start-time
                        :initform 0)
    (opacity-duration :accessor opacity-end-time
-                     :initform 0))
+                     :initform 0)
+   ;; Legacy Kitterspeak
+   (active-layer :accessor active-layer))
   (:documentation "A widget capable of displaying animated FOX5 shapes.
 LAYERS is an eight-element array that is meant to contain the currently ~
 displayed items, generated from sprites. The ordering is:
@@ -188,13 +193,15 @@ displayed items, generated from sprites. The ordering is:
               do (q+:add-item scene item)
                  (setf (q+:zvalue item) i)))))
 
-(defun legacy-layer (shape)
+(defun default-legacy-layer (shape)
   (if (eq (edit-type (parent shape)) :effect) :front :behind))
 
 (defun draw-shape (slow-animator shape)
   (setf (shape slow-animator) shape)
+  (setf (active-layer slow-animator) (default-legacy-layer shape))
   (with-slots-bound (slow-animator slow-animator)
-    (draw-frame slow-animator (first (children shape)) (legacy-layer shape))
+    (draw-frame slow-animator (first (children shape))
+                (default-legacy-layer shape))
     (if (kitterspeak shape)
         (execute-kitterspeak slow-animator)
         (update slow-animator))))
@@ -665,7 +672,7 @@ a delay defined by that variable instead."
 
 (define-kitterspeak :slide-frame-x (slow-animator offset msec)
   "Overrides the X offset for all frames."
-  (let* ((layer (legacy-layer shape))
+  (let* ((layer (default-legacy-layer shape))
          (item (aref layers (ecase layer (:behind 5) (:front 6))))
          (start (or x-value (when item (q+:x item)) 0)))
     (setf x-start start
@@ -679,7 +686,7 @@ a delay defined by that variable instead."
 
 (define-kitterspeak :slide-frame-y (slow-animator offset msec)
   "Overrides the Y offset for all frames."
-  (let* ((layer (legacy-layer shape))
+  (let* ((layer (default-legacy-layer shape))
          (item (aref layers (ecase layer (:behind 5) (:front 6))))
          (start (or y-value (when item (q+:y item)) 0)))
     (setf y-start start
@@ -708,16 +715,37 @@ a delay defined by that variable instead."
 ;; 1 - :SHOW-FRAME
 
 (define-kitterspeak :show-frame (slow-animator nframe)
-  ;; TODO
+  "Legacy rule. Draws the given frame on the current active frame."
+  (ecase active-layer
+    (:front (execute-step slow-animator :show-front-frame nframe 0))
+    (:behind (execute-step slow-animator :show-behind-frame nframe 0)))
   t)
 
-;; 9 - :DRAW-FRONT
+;; 9 - :MOVE-TO-FRONT
 
-;; TODO
+(define-kitterspeak :move-to-front (slow-animator)
+  "Moves the current active frame to front."
+  (when (eq active-layer :behind)
+    (setf active-layer :front)
+    (setf (aref layers 2) (aref layers 1)
+          (aref layers 1) nil
+          (aref layers 6) (aref layers 5)
+          (aref layers 5) nil
+          (aref frame-layers 2) (aref frame-layers 1)
+          (aref frame-layers 1) nil)))
 
-;; 10 - :DRAW-BEHIND
+;; 10 - :MOVE-BEHIND
 
-;; TODO
+(define-kitterspeak :move-to-front (slow-animator)
+  "Moves the current active frame to back."
+  (when (eq active-layer :front)
+    (setf active-layer :behind)
+    (setf (aref layers 1) (aref layers 2)
+          (aref layers 2) nil
+          (aref layers 5) (aref layers 6)
+          (aref layers 6) nil
+          (aref frame-layers 1) (aref frame-layers 2)
+          (aref frame-layers 2) nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Not implemented
@@ -895,9 +923,6 @@ implemented."
                 :initform nil)
    (left-now-p :accessor left-now-p
                :initform t)))
-
-(defparameter *walk-speed* 200
-  "Walking speed in milliseconds.")
 
 (define-slot (showcase animate-complex) ()
   (with-slots (shape) animator
