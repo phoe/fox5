@@ -40,6 +40,27 @@ image object"
               (setf (image sprite) image
                     (image-id sprite) nil))))))))
 
+(defun regenerate-image-list (file)
+  (let ((hash-table (make-hash-table)))
+    (dolist (object (children file))
+      (dolist (shape (children object))
+        (dolist (frame (children shape))
+          (dolist (sprite (children frame))
+            (let ((image (image sprite)))
+              (when image
+                (setf (gethash image hash-table) t)))))))
+    (let ((images (hash-table-keys hash-table)))
+      (loop for i from 0
+            for image in images
+            do (setf (gethash image hash-table) i))
+      (setf (images file) images))
+    (dolist (object (children file))
+      (dolist (shape (children object))
+        (dolist (frame (children shape))
+          (dolist (sprite (children frame))
+            (let ((image (image sprite)))
+              (setf (image-id sprite) (1+ (gethash image hash-table))))))))))
+
 ;;; TODO copy compressed data from original FOX5 instead of de- and
 ;;; recompressing them
 (defun write-images (file buffer)

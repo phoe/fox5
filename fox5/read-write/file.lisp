@@ -28,6 +28,7 @@ provided pathname. The resulting file is a valid FOX5 file.
 \
 If PRESERVE-COMPRESSED-P is true, then the compressed image data is not ~
 removed from the file after writing the FOX5 file.")
+  (regenerate-image-list file)
   (with-output-to-binary (stream pathname)
     (with-fast-output (buffer stream)
       (unwind-protect
