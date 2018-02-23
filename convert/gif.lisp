@@ -40,4 +40,5 @@
         finally (nreversef (children shape))
                 (parent-push object shape)
                 (parent-push file object)
+                (embed-images-into-sprites file)
                 (return file)))

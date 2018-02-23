@@ -42,6 +42,7 @@ the file is meant to be remappable."
                  (parent-push frame sprite)
               finally (nreversef (images file))
                       (nreversef (children file))
+                      (embed-images-into-sprites file)
                       (return file))))))
 
 (defun read-fs2 (pathname &key remapp)
@@ -80,6 +81,7 @@ the file is meant to be remappable."
                  (parent-push frame sprite)
               finally (nreversef (images file))
                       (nreversef (children file))
+                      (embed-images-into-sprites file)
                       (return file))))))
 
 (defun %read-fsh-image (buffer width height remapp)

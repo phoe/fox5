@@ -19,6 +19,7 @@ the file is meant to be remappable."
       (let* ((nshapes (%fox1-parse-header buffer))
              (file (%fox1-parse-file buffer nshapes remapp)))
         (assert (= (file-position stream) (file-length stream)))
+        (embed-images-into-sprites file)
         file))))
 
 (defun %fox1-parse-header (buffer)
