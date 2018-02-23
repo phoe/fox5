@@ -88,9 +88,11 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
 
 (define-print (object stream)
   (princ (edit-type object) stream)
-  (format stream "~^ (~A)" (name object)))
+  (princ (concatenate 'string " (" (name object) ")") stream))
 
 (define-print (shape stream) (princ (shape-type shape) stream))
+
+(define-print (sprite stream) (princ (purpose sprite) stream))
 
 ;;; TODO alists for all values
 

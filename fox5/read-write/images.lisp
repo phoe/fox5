@@ -5,10 +5,9 @@
 
 (in-package :fox5)
 
-;;; TODO rewrite everything using FAST-IO instead of using raw Lisp stream
-;;; reading functions
-;;; TODO: aren't we already using FAST-IO everywhere? c'mon, man
 (defun embed-image (image)
+  "Reads the respective image's data from the FOX5 file and inserts it into the
+image object"
   (let* ((file (file image))
          (footer (footer file))
          (command-block-size (compressed-size footer))
@@ -25,6 +24,21 @@
               do (nreversef (subseq decompressed i (+ 4 i))))
         (setf (slot-value image '%data) decompressed)
         (finalize image (curry #'free-static-vector decompressed))))))
+
+(defun embed-images-into-sprites (file)
+  (let ((images (images file)))
+    (setf (images file) '())
+    (dolist (object (children file))
+      (dolist (shape (children object))
+        (dolist (frame (children shape))
+          (dolist (sprite (children frame))
+            (let* ((id (1- (image-id sprite)))
+                   (image (nth id images)))
+              (when (null image)
+                (warn "Null image for:~%~S~%~S~%~S~%"
+                      object shape sprite))
+              (setf (image sprite) image
+                    (image-id sprite) nil))))))))
 
 ;;; TODO copy compressed data from original FOX5 instead of de- and
 ;;; recompressing them

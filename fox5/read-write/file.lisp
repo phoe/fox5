@@ -5,7 +5,7 @@
 
 (in-package :fox5)
 
-(defun read-fox5 (pathname &optional (embed-images-p t))
+(defun read-fox5 (pathname)
   #.(format nil "Reads the FOX5 file from the provided file and returns the ~
 parsed FOX5 file object.")
   (unless (pathnamep pathname) (setf pathname (pathname pathname)))
@@ -18,8 +18,8 @@ parsed FOX5 file object.")
            (file (parse-command-block command-block)))
       (setf (filepath file) pathname
             (footer file) footer)
-      (when embed-images-p
-        (mapc #'embed-image (images file)))
+      (mapc #'embed-image (images file))
+      (embed-images-into-sprites file)
       file)))
 
 (defun write-fox5 (file pathname &optional preserve-compressed-p)

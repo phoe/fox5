@@ -97,6 +97,9 @@ conserve resources."))
    (%image-id :initarg :image-id
               :accessor image-id
               :initform nil)
+   (%image :initarg :image
+           :accessor image
+           :initform nil)
    (%offset :initarg :offset
             :accessor offset
             :initform (list :x 0 :y 0)))
