@@ -26,6 +26,7 @@ image object"
         (finalize image (curry #'free-static-vector decompressed))))))
 
 (defun embed-images-into-sprites (file)
+  "Sets the IMAGE slot of each sprite in the file to the respective image."
   (let ((images (images file)))
     (setf (images file) '())
     (dolist (object (children file))
@@ -41,6 +42,8 @@ image object"
                     (image-id sprite) nil))))))))
 
 (defun regenerate-image-list (file)
+  "Regenerates the image list in the file based on the images currently linked
+inside the sprites of the file."
   (let ((hash-table (make-hash-table)))
     (dolist (object (children file))
       (dolist (shape (children object))
