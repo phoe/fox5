@@ -19,7 +19,7 @@
 
 ;;; Widget
 
-(define-widget slow-animator (qwidget)
+(define-widget slow-animator (qwidget qui:droppable)
   (;; Shape and color code for remapping
    (shape :accessor shape
           :initarg :shape

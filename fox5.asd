@@ -44,6 +44,7 @@
                #:qtcore
                #:qtgui
                #:qtools-ui-flow-layout
+               #:qtools-ui-drag-and-drop
                #:fox5
                #:cl-furcadia.remap)
   :components ((:file "qt/qt")))
