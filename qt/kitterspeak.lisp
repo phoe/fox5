@@ -248,9 +248,7 @@ displayed items, generated from sprites. The ordering is:
 
 (defun sprite-item (sprite &optional color-code x-offset y-offset)
   (let* ((offset (offset sprite))
-         (image-id (1- (image-id sprite)))
-         (file (nth-funcall #'parent 4 sprite))
-         (image (nth image-id (images file)))
+         (image (image sprite))
          (pixmap (image-qpixmap image color-code))
          (item (q+:make-qgraphicspixmapitem pixmap))
          (sprite-x (getf offset :x))
@@ -881,14 +879,15 @@ implemented."
   (reset-animator showcase)
   (draw-object showcase :nshape (1+ current-shape)))
 
-(define-constructor (showcase complicate-shapes-p gender)
-  (with-slots-bound (showcase showcase)
+(define-constructor (showcase complicate-shapes-p gender shapes)
+  (with-slots (animator color-code object predicate) showcase
     (setf (q+:minimum-width animator) 128
           (q+:minimum-height animator) 96)
     (setf (color-code animator) color-code)
-    (if complicate-shapes-p
-        (setf (shapes showcase) (object-complex-avatar-shapes object gender))
-        (setf (shapes showcase) (remove-if-not predicate (children object))))
+    (setf (shapes showcase)
+          (cond (shapes shapes)
+                (complicate-shapes-p (complicate-shapes object gender))
+                (t (remove-if-not predicate (children object)))))
     (draw-object showcase)))
 
 (defun draw-object (showcase &key (nshape 0))
@@ -956,14 +955,14 @@ implemented."
     (t
      (draw-shape animator (walk-right shape)))))
 
-(defun object-complex-avatar-shapes (object &optional gender)
+(defun complicate-shapes (object &optional gender)
   "Returns a fresh list containing complex avatar shapes."
-  (%object-complex-avatar-shapes object (edit-type object) gender))
+  (%complicate-shapes object (edit-type object) gender))
 
-(defgeneric %object-complex-avatar-shapes (object edit-type gender))
+(defgeneric %complicate-shapes (object edit-type gender))
 
 ;; TODO test for non-gendered avatars
-(defmethod %object-complex-avatar-shapes
+(defmethod %complicate-shapes
     (object (edit-type (eql :avatar)) gender)
   (declare (ignore gender))
   (loop with shapes = (remove-if-not (only-avatar-shapes)
@@ -986,10 +985,10 @@ implemented."
                do (progn)
         else collect shape))
 
-(defmethod %object-complex-avatar-shapes
+(defmethod %complicate-shapes
     (object (edit-type (eql :gendered-avatar)) gender)
-  (loop with shapes = (remove-if-not (only-avatar-shapes gender)
-                                     (children object))
+  (loop with children = (children object)
+        with shapes = (remove-if-not (only-avatar-shapes gender) children)
         for shape in shapes
         for (x y gender direction size pose) = (shape-type shape)
         if (and (eq pose :walk) (eq (class-of shape) (find-class 'shape)))
@@ -1005,9 +1004,8 @@ implemented."
                     (change-class left 'walk-shape :walk-parent shape)
                     (change-class shape 'walk-shape
                                   :walk-left left :walk-right right))
-        else if (member pose '(:walk-left :walk-right))
-               do (progn)
-        else collect shape))
+        else unless (member pose '(:walk-left :walk-right))
+               collect shape))
 
 #|
 (with-main-window (layout (make-instance 'qui:flow-layout))
