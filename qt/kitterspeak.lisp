@@ -831,7 +831,7 @@ implemented."
 (define-widget showcase (qwidget)
   ((object :reader object
            :initarg :object
-           :initform (error "Must specify an object."))
+           :initform nil)
    (color-code :accessor color-code
                :initarg :color-code
                :initform nil)
@@ -1011,9 +1011,10 @@ implemented."
 (with-main-window (layout (make-instance 'qui:flow-layout))
   (dolist (object (children (parent *object*)))
     (let ((showcase (make-instance 'showcase :object object
-                                             :color-code "w&#L&@(=(='###$#")))
-      (qui:add-widget showcase layout)
-      (draw-object showcase object))))
+                                             :color-code "w&#L&@(=(='###$#"
+                                             :predicate (only-avatar-shapes)
+                                             :complicate-shapes-p t)))
+      (qui:add-widget showcase layout))))
 
 (with-main-window (showcase (make-instance 'showcase
                                            :object *object*
