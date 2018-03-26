@@ -14,11 +14,12 @@ such as FSH, FS2, FOX1, GIF. This function may merge multiple objects into one
 as a part of its work."))
 
 (defparameter %*specialize-avatar-subtypes*
-  '((:sw :sit) (:sw :walk-right) (:sw :walk) (:sw :walk-left)
-    (:se :sit) (:se :walk-right) (:se :walk) (:se :walk-left)
-    (:nw :sit) (:nw :walk-right) (:nw :walk) (:nw :walk-left)
-    (:ne :sit) (:ne :walk-right) (:ne :walk) (:ne :walk-left)
-    (:sw :lie) (:se :lie) (:nw :lie) (:ne :lie)))
+  (uiop:while-collecting (x)
+    (dolist (i '(:sw :se :nw :ne))
+      (dolist (j '(:sit :walk-right :walk :walk-left))
+        (x (list i j))))
+    (dolist (i '(:sw :se :nw :ne))
+      (x (list i :lie)))))
 
 (defmethod specialize ((file file) (type (eql :player)) &key swap-lying-p)
   (flet ((g (direction state) `(:avatar :avatar nil ,direction :small ,state)))
