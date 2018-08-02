@@ -33,13 +33,14 @@ image object"
       (dolist (shape (children object))
         (dolist (frame (children shape))
           (dolist (sprite (children frame))
-            (let* ((id (1- (image-id sprite)))
-                   (image (nth id images)))
-              (when (null image)
-                (warn "Null image for:~%~S~%~S~%~S~%"
-                      object shape sprite))
-              (setf (image sprite) image
-                    (image-id sprite) nil))))))))
+            (let* ((id (1- (image-id sprite))))
+              (when (non-negative-integer-p id)
+                (let ((image (nth id images)))
+                  (when (null image)
+                    (warn "Null image for:~%~S~%~S~%~S~%"
+                          object shape sprite))
+                  (setf (image sprite) image
+                        (image-id sprite) nil))))))))))
 
 (defun regenerate-image-list (file)
   "Regenerates the image list in the file based on the images currently linked
@@ -62,7 +63,8 @@ inside the sprites of the file."
         (dolist (frame (children shape))
           (dolist (sprite (children frame))
             (let ((image (image sprite)))
-              (setf (image-id sprite) (1+ (gethash image hash-table))))))))))
+              (when-let ((num (gethash image hash-table)))
+                (setf (image-id sprite) (1+ num))))))))))
 
 ;;; TODO copy compressed data from original FOX5 instead of de- and
 ;;; recompressing them
