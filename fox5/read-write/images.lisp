@@ -50,9 +50,8 @@ inside the sprites of the file."
       (dolist (shape (children object))
         (dolist (frame (children shape))
           (dolist (sprite (children frame))
-            (let ((image (image sprite)))
-              (when image
-                (setf (gethash image hash-table) t)))))))
+            (when-let ((image (image sprite)))
+              (setf (gethash image hash-table) t))))))
     (let ((images (hash-table-keys hash-table)))
       (loop for i from 0
             for image in images
