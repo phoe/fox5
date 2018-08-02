@@ -15,8 +15,8 @@
   `(setf (gethash ,name *inferrers*)
          (lambda (,file ,specializations)
            (block nil
-             (flet ((pass () (return (remove ',name ,specializations)))
-                    (decline () (return ,specializations))
+             (flet ((decline () (return (remove ',name ,specializations)))
+                    (pass () (return ,specializations))
                     (accept () (return (list ',name))))
                (declare (ignorable #'pass #'decline #'accept))
                ,@body)))))
@@ -35,14 +35,19 @@ after"
           return specializations
         finally (return specializations)))
 
-(define-inferer :portrait (file)
-  (when (!= 0 (mod (length (children file)) 3))
-    (pass)) ;; TODO this won't work for more than three ports
-  (dolist (object (children file))
-    (dolist (shape (children object))
-      (dolist (frame (children shape))
-        (dolist (sprite (children frame))
-          (let ((image (image sprite)))
-            (unless (= 95 (width image) (height image))
-              (pass)))))))
-  (accept))
+;; (define-inferer :portrait (file)
+;;   (when (/= 0 (mod (length (children file)) 3))
+;;     (decline)) ;; TODO this won't work for more than three ports
+;;   (dolist (object (children file))
+;;     (dolist (shape (children object))
+;;       (dolist (frame (children shape))
+;;         (dolist (sprite (children frame))
+;;           (let ((image (image sprite)))
+;;             (unless (= 95 (width image) (height image))
+;;               (decline)))))))
+;;   (accept))
+
+;; (define-inferer :wall (file)
+;;   (when (oddp (length (children file)))
+;;     (decline))
+;;   (pass))

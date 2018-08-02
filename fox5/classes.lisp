@@ -116,7 +116,7 @@ conserve resources."))
            :initarg :width)
    (%height :accessor height
             :initarg :height)
-   (%data :writer (setf data)
+   (%data :accessor data
           :initarg :data))
   (:documentation "FOX5 image class."))
 
@@ -127,13 +127,12 @@ compressed size slot is not set."
       (length (compressed-data image))
       (slot-value image '%compressed-size)))
 
-(defmethod data ((image image))
+(defmethod data :before ((image image))
   "Method automatically embedding image data into FOX5 files, in case it has not
 been embedded before."
   (when (and (not (slot-boundp image '%data))
              (slot-boundp (file image) '%filepath))
-    (embed-image image))
-  (slot-value image '%data))
+    (embed-image image)))
 
 (defmethod (setf data) :after (new-value (image image))
   (slot-makunbound image '%compressed-data))
