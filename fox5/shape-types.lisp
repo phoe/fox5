@@ -12,6 +12,59 @@
   (setf (parent child) parent)
   (values))
 
+;;; Data
+
+(defparameter *shape-types*
+  (uiop:while-collecting (collect)
+    ;; FLOOR ITEM EFFECT REGION LIGHTING AMBIENCE
+    (dolist (i '(:floor :item :effect :region :lighting :ambience))
+      (dolist (j `((:menu-icon :tiny) (:menu-icon :small) (:menu-icon :large)
+                   (:menu-icon :showcase) (,i :small) (,i :large)))
+        (collect (list* i j))))
+    ;; WALL
+    (dolist (i '(:tiny :small :large :showcase))
+      (collect (list :wall :menu-icon i)))
+    (dolist (i '(:right :left))
+      (dolist (j '(:small :large))
+        (collect (list :wall :wall i j))))
+    ;; PORTAL
+    (dolist (i '(:tiny :small :large :showcase))
+      (collect (list :portal :menu-icon i)))
+    (dolist (i '(:small :large))
+      (collect (list :portal :pad i))
+      (dolist (j '(:standard :silver-sponsor :gold-sponsor :group-package
+                   :high-group-package :staff :special))
+        (collect (list :portal :portal j i))))
+    ;; PORTRAIT SET
+    (dolist (i '(:female :male :unspecified))
+      (collect (list :portrait-set :portrait i)))
+    ;; AVATAR
+    (dolist (i '(:tiny :small :large :showcase))
+      (collect (list :avatar :menu-icon i)))
+    (dolist (i '(:butler :portrait :specitag))
+      (collect (list :avatar i)))
+    (dolist (j '(:nw :ne :sw :se))
+      (dolist (k '(:small :large))
+        (dolist (l '(:walk-right :lie :walk :sit :walk-left))
+          (collect (list :avatar :avatar j k l)))))
+    ;; GENDERED-AVATAR
+    (dolist (i '(:tiny :small :large :showcase))
+      (dolist (j '(:female :male :unspecified))
+        (collect (list :gendered-avatar :menu-icon i j))))
+    (dolist (i '(:butler :portrait :specitag))
+      (dolist (j '(:female :male :unspecified))
+        (collect (list :gendered-avatar i j))))
+    (dolist (i '(:female :male :unspecified))
+      (dolist (j '(:nw :ne :sw :se))
+        (dolist (k '(:small :large))
+          (dolist (l '(:walk-right :lie :walk :sit :walk-left))
+            (collect (list :gendered-avatar :avatar i j k l))))))
+    ;; BUTTON DS-BUTTON
+    (dolist (i '(:button :ds-button))
+      (dolist (j '(:normal :clicked :hover :toggled))
+        (collect (list i i j)))))
+  "A list of all shape types legal in FOX5.")
+
 ;;; Framework - Readers
 
 (defgeneric shape-type (shape)
@@ -265,54 +318,3 @@ EDIT-TYPE and NEW-VALUE, which contains the new value to be set."
                          (error "Expected an error to be signaled."))
       (error ()))
     (values)))
-
-(defparameter *shape-types*
-  (uiop:while-collecting (collect)
-    ;; FLOOR ITEM EFFECT REGION LIGHTING AMBIENCE
-    (dolist (i '(:floor :item :effect :region :lighting :ambience))
-      (dolist (j `((:menu-icon :tiny) (:menu-icon :small) (:menu-icon :large)
-                   (:menu-icon :showcase) (,i :small) (,i :large)))
-        (collect (list* i j))))
-    ;; WALL
-    (dolist (i '(:tiny :small :large :showcase))
-      (collect (list :wall :menu-icon i)))
-    (dolist (i '(:right :left))
-      (dolist (j '(:small :large))
-        (collect (list :wall :wall i j))))
-    ;; PORTAL
-    (dolist (i '(:tiny :small :large :showcase))
-      (collect (list :portal :menu-icon i)))
-    (dolist (i '(:small :large))
-      (collect (list :portal :pad i))
-      (dolist (j '(:standard :silver-sponsor :gold-sponsor :group-package
-                   :high-group-package :staff :special))
-        (collect (list :portal :portal j i))))
-    ;; PORTRAIT SET
-    (dolist (i '(:female :male :unspecified))
-      (collect (list :portrait-set :portrait i)))
-    ;; AVATAR
-    (dolist (i '(:tiny :small :large :showcase))
-      (collect (list :avatar :menu-icon i)))
-    (dolist (i '(:butler :portrait :specitag))
-      (collect (list :avatar i)))
-    (dolist (j '(:nw :ne :sw :se))
-      (dolist (k '(:small :large))
-        (dolist (l '(:walk-right :lie :walk :sit :walk-left))
-          (collect (list :avatar :avatar j k l)))))
-    ;; GENDERED-AVATAR
-    (dolist (i '(:tiny :small :large :showcase))
-      (dolist (j '(:female :male :unspecified))
-        (collect (list :gendered-avatar :menu-icon i j))))
-    (dolist (i '(:butler :portrait :specitag))
-      (dolist (j '(:female :male :unspecified))
-        (collect (list :gendered-avatar i j))))
-    (dolist (i '(:female :male :unspecified))
-      (dolist (j '(:nw :ne :sw :se))
-        (dolist (k '(:small :large))
-          (dolist (l '(:walk-right :lie :walk :sit :walk-left))
-            (collect (list :gendered-avatar :avatar i j k l))))))
-    ;; BUTTON DS-BUTTON
-    (dolist (i '(:button :ds-button))
-      (dolist (j '(:normal :clicked :hover :toggled))
-        (collect (list i i j)))))
-  "A list of all shape types legal in FOX5.")
