@@ -14,6 +14,7 @@
    #:cl-furcadia/remap
    #:cl-furcadia/constants)
   (:shadowing-import-from #:fox5 #:ratio #:parent)
+  (:shadowing-import-from #:phoe-toolbox #:split)
   (:export
    #:*sample-color-codes*
    #:showcase))
