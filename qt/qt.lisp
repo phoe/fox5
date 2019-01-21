@@ -13,6 +13,7 @@
    #:alexandria
    #:cl-furcadia/remap
    #:cl-furcadia/constants)
+  (:shadowing-import-from #:phoe-toolbox #:split)
   (:shadowing-import-from #:fox5 #:ratio #:parent)
   (:export
    #:*sample-color-codes*
