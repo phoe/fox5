@@ -13,7 +13,7 @@
   "When a FOX5 object is being written, all of its bound slots must be written
 to the file in form of FOX5 commands."
   (mapc (lambda (x) (write-command object x buffer))
-        (bound-slots-values object)))
+        (bound-slot-names object)))
 
 (defmethod write-fox5-to-buffer :after ((object fox5-class) buffer)
   "We do not create a write method for children of a FOX5 object. Rather, we
