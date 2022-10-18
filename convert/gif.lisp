@@ -82,7 +82,7 @@
             (destructuring-bind (pathname filename content-type) file
               (declare (ignore content-type))
               (prog1 (flex:with-output-to-sequence (stream)
-                       (let ((gif (fox5:read-gif pathname :remapp remapp)))
+                       (let ((gif (read-gif pathname :remapp remapp)))
                          (write-fox5-stream gif stream)))
                 (setf (hunchentoot:content-type*) "application/force-download")
                 (setf (hunchentoot:header-out :content-disposition)
