@@ -19,7 +19,7 @@
     (destructuring-bind (width height loopingp) data
       (declare (ignore loopingp))
       (flet ((ks (i delay) (let ((delay (if (= 0 delay) 100 (* 10 delay))))
-                             `((:frame-behind ,i 0) (:delay ,delay 0))))
+                             `((:move-behind ,i 0) (:delay ,delay 0))))
              (make-image (data)
                (make-instance 'image :width width :height height :data data)))
         (list (mapcar #'make-image vectors)
@@ -42,3 +42,51 @@
                 (parent-push file object)
                 (embed-images-into-sprites file)
                 (return file)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; HTML interface
+
+(defvar *acceptor* (make-instance 'hunchentoot:easy-acceptor :port 4242))
+
+(defparameter *html* "
+<!DOCTYPE html>
+<html lang=\"en\">
+  <head>
+    <meta charset=\"utf-8\">
+    <title>fox5-web</title>
+  </head>
+  <body>
+    <h1>Furcadia GIF => FOX5 Portrait Converter</h1>
+    <form action=\"submit\" method=\"post\"
+          enctype=\"multipart/form-data\"
+          accept=\"image/gif\">
+      <p>Select image to upload:</p>
+      <input type=\"file\" name=\"file\" id=\"file\"><br />
+      <input type=\"checkbox\" id=\"remap\" name=\"remap\" value=\"Remappable\">
+      <label for=\"vehicle1\">Remappable</label>
+      <br />
+      <input type=\"submit\" value=\"Convert!\" name=\"submit\">
+    </form>
+  </body>
+</html>
+")
+
+(hunchentoot:define-easy-handler (serve-index :uri "/") ()
+  *html*)
+
+(hunchentoot:define-easy-handler (submit :uri "/submit") (remapp)
+  (let ((file (hunchentoot:post-parameter "file")))
+    (if (null file)
+        "Please specify a file!"
+        (handler-case
+            (destructuring-bind (pathname filename content-type) file
+              (declare (ignore content-type))
+              (prog1 (flex:with-output-to-sequence (stream)
+                       (let ((gif (fox5:read-gif pathname :remapp remapp)))
+                         (write-fox5-stream gif stream)))
+                (setf (hunchentoot:content-type*) "application/force-download")
+                (setf (hunchentoot:header-out :content-disposition)
+                      (format nil "attachment; filename=~A.fox" filename))))
+          (error (e)
+            (setf (hunchentoot:return-code*) 500)
+            (format nil "Error: ~A" e))))))

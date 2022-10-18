@@ -18,6 +18,7 @@
                #:static-vectors
                #:trivial-garbage
                #:closer-mop
+               #:hunchentoot
                #:cl-furcadia.ws
                #:cl-furcadia.remap)
   :components ((:file "fox5/package")

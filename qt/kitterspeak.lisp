@@ -734,7 +734,7 @@ a delay defined by that variable instead."
 
 ;; 10 - :MOVE-BEHIND
 
-(define-kitterspeak :move-to-front (slow-animator)
+(define-kitterspeak :move-to-behind (slow-animator)
   "Moves the current active frame to back."
   (when (eq active-layer :front)
     (setf active-layer :behind)
