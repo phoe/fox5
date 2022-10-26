@@ -19,7 +19,7 @@
     (destructuring-bind (width height loopingp) data
       (declare (ignore loopingp))
       (flet ((ks (i delay) (let ((delay (if (= 0 delay) 100 (* 10 delay))))
-                             `((:move-behind ,i 0) (:delay ,delay 0))))
+                             `((:show-behind-frame ,i 0) (:delay ,delay 0))))
              (make-image (data)
                (make-instance 'image :width width :height height :data data)))
         (list (mapcar #'make-image vectors)
